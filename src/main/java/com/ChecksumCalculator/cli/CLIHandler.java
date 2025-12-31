@@ -282,6 +282,7 @@ public class CLIHandler {
         FSNode root = fsBuilder.build(path);
 
         HashComparator hc = new HashComparator(cr, calculator);
+        hc.addObserver(new ProgressReporter(root.getSizeInBytes()));
         ComparisonResultSerializer crs = new ComparisonResultSerializer(System.out);
         crs.write(hc.compare(root));
     }
@@ -305,7 +306,6 @@ public class CLIHandler {
         }
 
         try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-
             ChecksumSerializer serializer = null;
 
             try {

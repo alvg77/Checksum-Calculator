@@ -2,6 +2,7 @@ package com.ChecksumCalculator.progress;
 
 import com.ChecksumCalculator.cli.CLIErrorHandler;
 import com.ChecksumCalculator.core.calculator.ChecksumCalculator;
+import com.ChecksumCalculator.core.verification.HashComparator;
 import com.ChecksumCalculator.filesystem.visitor.HashStreamWriter;
 import com.ChecksumCalculator.progress.observer.Observable;
 import com.ChecksumCalculator.progress.observer.Observer;
@@ -42,7 +43,7 @@ public class ProgressReporter implements Observer {
                     }
                 }
             }
-        } else if (source instanceof HashStreamWriter) {
+        } else if (source instanceof HashStreamWriter || source instanceof HashComparator) {
             IO.println("\n");
             currentPath = (String) msg;
             bytesRead = 0;

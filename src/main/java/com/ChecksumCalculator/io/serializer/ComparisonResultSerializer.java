@@ -14,6 +14,8 @@ public class ComparisonResultSerializer {
     }
 
     public void write(Map<String, Status> results) {
+        IO.println();
+        IO.println("======REPORT======");
         for (Map.Entry<String, Status> entry : results.entrySet()) {
             writer.println(entry.getKey() + ": " + entry.getValue());
         }
