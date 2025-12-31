@@ -9,12 +9,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+
+// TODO: Implement with filevisitor or File.walk, this is prone to stackoverflowerror
+// TODO: add checks for os type
+// TODO: add processing for windows
 public abstract class FSBuilder {
     public FSNode build(String rootPath) {
         File file = new File(rootPath);
 
         if (!file.exists()) {
-            throw new RuntimeException("Path does not exist: " + file.getAbsolutePath());
+            throw new RuntimeException("Path does not exist: " + file.getPath());
         }
 
         return build(file);
@@ -30,27 +34,26 @@ public abstract class FSBuilder {
         }
 
         if (file.isDirectory()) {
-            File[] files = file.listFiles();
             return buildDirectory(file);
         }
 
-        throw new RuntimeException("Unsupported file type: " + file.getAbsolutePath());
+        throw new RuntimeException("Unsupported file type: " + file.getPath());
     }
 
     protected FSNode buildFile(File file) {
-        return new FileNode(file.getAbsolutePath(), file.length());
+        return new FileNode(file.getPath(), file.length());
     }
 
     protected FSNode buildDirectory(File file) {
         File[] files = file.listFiles();
 
         if (files == null) {
-            throw new RuntimeException("Cannot read directory: " + file.getAbsolutePath() + "! Please check your permissions.");
+            throw new RuntimeException("Cannot read directory: " + file.getPath() + "! Please check your permissions.");
         }
 
         List<FSNode> children = buildDirectoryChildren(files);
 
-        return new DirNode(file.getAbsolutePath(), children);
+        return new DirNode(file.getPath(), children);
     }
 
     protected abstract List<FSNode> buildDirectoryChildren(File[] files);

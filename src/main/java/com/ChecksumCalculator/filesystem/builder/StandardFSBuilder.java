@@ -1,6 +1,5 @@
 package com.ChecksumCalculator.filesystem.builder;
 
-import com.ChecksumCalculator.filesystem.node.DirNode;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 
 import java.io.File;

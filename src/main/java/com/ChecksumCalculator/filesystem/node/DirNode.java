@@ -2,7 +2,6 @@ package com.ChecksumCalculator.filesystem.node;
 
 import com.ChecksumCalculator.filesystem.visitor.FSVisitor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class DirNode extends FSNode {

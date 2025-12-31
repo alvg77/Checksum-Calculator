@@ -5,5 +5,6 @@ import com.ChecksumCalculator.filesystem.node.FileNode;
 
 public interface FSVisitor {
     void visit(FileNode node);
+
     void visit(DirNode node);
 }
