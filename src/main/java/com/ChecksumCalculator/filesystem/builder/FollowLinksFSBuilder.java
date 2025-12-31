@@ -34,7 +34,7 @@ public class FollowLinksFSBuilder extends FSBuilder {
                 visitedPaths.add(realPath);
                 children.add(build(file));
             } catch (IOException e) {
-                CLIErrorHandler.fatal(e.getMessage());
+                CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
             }
         }
 
@@ -55,7 +55,7 @@ public class FollowLinksFSBuilder extends FSBuilder {
                 node = buildFile(file);
             }
         } catch (IOException e) {
-            CLIErrorHandler.fatal("Cannot follow symlink/shortcut: " + e.getMessage());
+            CLIErrorHandler.fatal("Cannot follow symlink/shortcut: " + e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
 
         return node;

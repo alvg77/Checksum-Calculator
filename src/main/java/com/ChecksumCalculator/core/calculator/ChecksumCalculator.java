@@ -24,8 +24,11 @@ public abstract class ChecksumCalculator extends Observable {
             }
 
             checksum = getHexString(md.digest());
-        } catch (NoSuchAlgorithmException | IOException e) {
-            CLIErrorHandler.fatal(e.getMessage());
+        } catch (NoSuchAlgorithmException e) {
+            // TODO:
+            System.exit(1342);
+        } catch (IOException e) {
+            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
 
         return checksum;

@@ -52,7 +52,7 @@ public class HashComparator implements FSVisitor {
                 statuses.put(path, Status.NEW);
             }
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage());
+            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
     }
 

@@ -36,7 +36,7 @@ public class TextChecksumReader extends ChecksumReader {
                 hashes.put(path, hash);
             }
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage());
+            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
 
         return hashes;

@@ -22,7 +22,6 @@ import org.apache.commons.cli.*;
 import org.apache.commons.cli.help.HelpFormatter;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -282,13 +281,9 @@ public class CLIHandler {
 
         FSNode root = fsBuilder.build(path);
 
-        try (FileInputStream fis = new FileInputStream(inputFile)) {
-            HashComparator hc = new HashComparator(cr, calculator);
-            ComparisonResultSerializer crs = new ComparisonResultSerializer(System.out);
-            crs.write(hc.compare(root));
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot read file: " + inputFile, e);
-        }
+        HashComparator hc = new HashComparator(cr, calculator);
+        ComparisonResultSerializer crs = new ComparisonResultSerializer(System.out);
+        crs.write(hc.compare(root));
     }
 
     private void executeResume() {
@@ -319,7 +314,7 @@ public class CLIHandler {
                     case JSON -> new JSONChecksumSerializer(fos);
                 };
             } catch (IOException e) {
-                CLIErrorHandler.fatal(e.getMessage());
+                CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
             }
 
             assert serializer != null;
@@ -329,14 +324,13 @@ public class CLIHandler {
             hsw.write(root);
             IO.println("\nDone! Results written to: " + outputFile.getAbsolutePath());
         } catch (IOException e) {
-            throw new RuntimeException("Cannot write to output file: " + outputFile, e);
+            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
     }
 
     private ChecksumCalculator parseAlgorithm() {
         if (cmd.hasOption("algorithm")) {
             return switch (cmd.getOptionValue("algorithm").toLowerCase()) {
-                case "md5" -> new MD5Calculator();
                 case "sha1" -> new SHA1Calculator();
                 case "sha512" -> new SHA512Calculator();
                 default -> new MD5Calculator();
@@ -355,7 +349,6 @@ public class CLIHandler {
     private Format parseFormat(String fileName) {
         if (cmd.hasOption("format")) {
             return switch (cmd.getOptionValue("format").toLowerCase()) {
-                case "text" -> Format.TEXT;
                 case "json" -> Format.JSON;
                 default -> Format.TEXT;
             };
@@ -409,7 +402,7 @@ public class CLIHandler {
         try {
             formatter.printOptions(options);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
 
         System.out.println();

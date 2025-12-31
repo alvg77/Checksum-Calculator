@@ -35,7 +35,7 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
             String checksum = calc.calculate(new FileInputStream(f));
             checksumSerializer.write(new ChecksumData(checksum, f.getPath(), f.length()));
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage());
+            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
     }
 
