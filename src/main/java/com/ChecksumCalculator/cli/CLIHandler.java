@@ -10,6 +10,7 @@ import com.ChecksumCalculator.filesystem.builder.FollowLinksFSBuilder;
 import com.ChecksumCalculator.filesystem.builder.StandardFSBuilder;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 import com.ChecksumCalculator.filesystem.visitor.HashStreamWriter;
+import com.ChecksumCalculator.filesystem.visitor.ReportWriter;
 import com.ChecksumCalculator.io.reader.ChecksumReader;
 import com.ChecksumCalculator.io.reader.JSONChecksumReader;
 import com.ChecksumCalculator.io.reader.TextChecksumReader;
@@ -281,6 +282,8 @@ public class CLIHandler {
 
         FSNode root = fsBuilder.build(path);
 
+        report(root);
+
         HashComparator hc = new HashComparator(cr, calculator);
         hc.addObserver(new ProgressReporter(root.getSizeInBytes()));
         ComparisonResultSerializer crs = new ComparisonResultSerializer(System.out);
@@ -318,6 +321,8 @@ public class CLIHandler {
             }
 
             assert serializer != null;
+
+            report(root);
 
             HashStreamWriter hsw = new HashStreamWriter(serializer, calculator);
             hsw.addObserver(new ProgressReporter(root.getSizeInBytes()));
@@ -414,6 +419,14 @@ public class CLIHandler {
 
     private static boolean isBlank(String str) {
         return str == null || str.trim().isEmpty();
+    }
+
+    private void report(FSNode root) {
+        ReportWriter rw = new ReportWriter(System.out);
+        root.accept(rw);
+
+        IO.println("\nPress any key to continue...");
+        IO.readln();
     }
 
     private static Options getOptions() {
