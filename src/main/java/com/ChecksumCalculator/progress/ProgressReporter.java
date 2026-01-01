@@ -6,52 +6,72 @@ import com.ChecksumCalculator.core.verification.HashComparator;
 import com.ChecksumCalculator.filesystem.visitor.HashStreamWriter;
 import com.ChecksumCalculator.progress.observer.Observable;
 import com.ChecksumCalculator.progress.observer.Observer;
-
-import java.sql.Timestamp;
+import com.ChecksumCalculator.state.PauseMessage;
+import com.ChecksumCalculator.state.memento.ProgressReporterMemento;
 
 public class ProgressReporter implements Observer {
     private String currentPath;
-    private Integer bytesRead;
+    private long bytesReadCurrentFile;
+    private long bytesCompleted;
     private long bytesReadSum;
     private final long totalBytes;
-    private final Timestamp timestamp;
+    private long startTimeMillis;
     private int remainingSeconds;
 
     public ProgressReporter(long totalBytes) {
-        currentPath = "(nothing)";
-        bytesRead = 0;
-        bytesReadSum = 0;
+        this.currentPath = "(nothing)";
+        this.bytesReadCurrentFile = 0;
+        this.bytesCompleted = 0;
+        this.bytesReadSum = 0;
         this.totalBytes = totalBytes;
-        timestamp = new Timestamp(System.currentTimeMillis());
+        this.startTimeMillis = System.currentTimeMillis();
     }
 
     @Override
     public void update(Observable source, Object msg) {
         if (source instanceof ChecksumCalculator) {
-            bytesRead = (Integer) msg;
-            bytesReadSum += bytesRead;
+            if (msg instanceof PauseMessage) {
+                return;
+            } else if (msg instanceof Number) {
+                long bytes = ((Number) msg).longValue();
+                bytesReadCurrentFile += bytes;
+                bytesReadSum += bytes;
 
-            Timestamp currentTimestamp = new Timestamp(System.currentTimeMillis());
-
-            if (timestamp != null) {
-                int secDiff = (int) ((currentTimestamp.getTime() - timestamp.getTime()) / 1000);
-
-                if (secDiff > 0) {
-                    long bytesPerSecond = bytesReadSum / secDiff;
+                long elapsedMillis = System.currentTimeMillis() - startTimeMillis;
+                if (elapsedMillis > 0) {
+                    long bytesPerSecond = (bytesReadSum * 1000) / elapsedMillis;
                     if (bytesPerSecond > 0) {
-                        remainingSeconds = Math.toIntExact((totalBytes - bytesReadSum) / bytesPerSecond);
+                        remainingSeconds = (int) ((totalBytes - bytesCompleted - bytesReadCurrentFile) / bytesPerSecond);
                     }
                 }
+            } else {
+                CLIErrorHandler.fatal("Unexpected message type", CLIErrorHandler.ErrorType.IO); // TODO:
             }
         } else if (source instanceof HashStreamWriter || source instanceof HashComparator) {
             IO.println("\n");
-            currentPath = (String) msg;
-            bytesRead = 0;
+
+            if (msg instanceof String) {
+                bytesCompleted += bytesReadCurrentFile;
+                currentPath = (String) msg;
+                bytesReadCurrentFile = 0;
+            } else {
+                CLIErrorHandler.fatal("Unexpected message type", CLIErrorHandler.ErrorType.IO); // TODO:
+            }
         } else {
-            CLIErrorHandler.warn("unexpected message, continuing...");
+            CLIErrorHandler.fatal("Unexpected message source", CLIErrorHandler.ErrorType.IO); // TODO:
         }
 
         refreshDisplay();
+    }
+
+    public ProgressReporterMemento saveToMemento() {
+        return new ProgressReporterMemento(bytesCompleted);
+    }
+
+    public void restoreFromMemento(ProgressReporterMemento memento) {
+        bytesCompleted = memento.bytesCompleted();
+        bytesReadSum = 0;
+        startTimeMillis = System.currentTimeMillis();
     }
 
     private void refreshDisplay() {
@@ -59,7 +79,7 @@ public class ProgressReporter implements Observer {
         sb.append("\rProcessing ");
         sb.append(currentPath);
         sb.append(" ... ");
-        sb.append(bytesRead);
+        sb.append(bytesReadCurrentFile);
         sb.append(" byte(s) read, ");
 
         if (remainingSeconds > 0) {

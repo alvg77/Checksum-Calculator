@@ -23,7 +23,8 @@ public class JSONChecksumReader extends ChecksumReader {
         List<ChecksumData> checksumDataList = null;
 
         try {
-             checksumDataList = mapper.readValue(new File(filePath), new TypeReference<>() {});
+            checksumDataList = mapper.readValue(new File(filePath), new TypeReference<>() {
+            });
         } catch (IOException e) {
             CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }

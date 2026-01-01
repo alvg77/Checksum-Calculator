@@ -2,9 +2,12 @@ package com.ChecksumCalculator.filesystem.builder;
 
 import com.ChecksumCalculator.cli.CLIErrorHandler;
 import com.ChecksumCalculator.filesystem.node.FSNode;
+import mslinks.ShellLink;
+import mslinks.ShellLinkException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,21 +46,38 @@ public class FollowLinksFSBuilder extends FSBuilder {
 
     @Override
     protected FSNode buildSymlinkOrShortcut(File file) {
-        FSNode node = null;
+        if (Files.isSymbolicLink(file.toPath())) {
+            try {
+                Path linkPath = file.toPath().toRealPath();
+                File target = linkPath.toFile();
 
-        try {
-            Path linkPath = file.toPath().toRealPath();
-            File target = linkPath.toFile();
-
-            if (target.isDirectory()) {
-                node = buildDirectory(file);
-            } else {
-                node = buildFile(file);
+                if (target.isDirectory()) {
+                    return buildDirectory(target);
+                } else {
+                    return buildFile(target);
+                }
+            } catch (IOException e) {
+                CLIErrorHandler.fatal("Cannot follow symlink: " + e.getMessage(),
+                        CLIErrorHandler.ErrorType.IO);
             }
-        } catch (IOException e) {
-            CLIErrorHandler.fatal("Cannot follow symlink/shortcut: " + e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
 
-        return node;
+        if (file.getName().toLowerCase().endsWith(".lnk")) {
+            try {
+                ShellLink link = new ShellLink(file);
+                String targetPath = link.resolveTarget();
+                File target = new File(targetPath);
+
+                if (target.isDirectory()) {
+                    return buildDirectory(target);
+                } else {
+                    return buildFile(target);
+                }
+            } catch (ShellLinkException | IOException e) {
+                CLIErrorHandler.fatal("Cannot follow windows shortcut: " + e.getMessage(), CLIErrorHandler.ErrorType.IO); // TODO:
+            }
+        }
+
+        return null;
     }
 }

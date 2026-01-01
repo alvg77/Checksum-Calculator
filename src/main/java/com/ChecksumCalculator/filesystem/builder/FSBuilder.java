@@ -9,10 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-
-// TODO: Implement with filevisitor or File.walk, this is prone to stackoverflowerror
-// TODO: add checks for os type
-// TODO: add processing for windows
 public abstract class FSBuilder {
     public FSNode build(String rootPath) {
         File file = new File(rootPath);

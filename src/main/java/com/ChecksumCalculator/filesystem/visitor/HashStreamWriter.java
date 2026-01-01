@@ -9,27 +9,33 @@ import com.ChecksumCalculator.io.ChecksumData;
 import com.ChecksumCalculator.io.serializer.checksum.ChecksumSerializer;
 import com.ChecksumCalculator.progress.observer.Observable;
 import com.ChecksumCalculator.progress.observer.Observer;
-import com.ChecksumCalculator.state.HashStreamWriterMemento;
+import com.ChecksumCalculator.state.memento.HashStreamWriterMemento;
+import com.ChecksumCalculator.state.PauseMessage;
 
 import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
 
 public class HashStreamWriter extends Observable implements FSVisitor, Observer {
-    ChecksumSerializer checksumSerializer;
-    ChecksumCalculator calc;
+    private final ChecksumSerializer checksumSerializer;
+    private final ChecksumCalculator calc;
 
-    Set<String> processedFiles;
+    private Set<String> processedFiles;
+    private boolean paused;
 
     public HashStreamWriter(ChecksumSerializer serializer, ChecksumCalculator calc) {
-        checksumSerializer = serializer;
+        this.checksumSerializer = serializer;
         this.calc = calc;
-        processedFiles = new HashSet<>();
+        calc.addObserver(this);
+        this.processedFiles = new HashSet<>();
+        this.paused = false;
     }
 
     public void write(FSNode root) {
-       root.accept(this);
-       checksumSerializer.close();
+        root.accept(this);
+//        if (!paused) {
+            checksumSerializer.close();
+
     }
 
     @Override
@@ -40,14 +46,21 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
             return;
         }
 
-        processedFiles.add(nodePath);
-
         File f = new File(nodePath);
 
         notifyObservers(this, nodePath);
         try {
             String checksum = calc.calculate(new FileInputStream(f));
+
+            if (paused) {
+//                checksumSerializer.close();
+                return;
+            }
+
+            assert checksum != null;
+
             checksumSerializer.write(new ChecksumData(checksum, f.getPath(), f.length()));
+            processedFiles.add(nodePath);
         } catch (IOException e) {
             CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
@@ -56,10 +69,8 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
     @Override
     public void visit(DirNode node) {
         for (FSNode fn : node.getChildren()) {
-            String fnPath = fn.getPath();
-            if (processedFiles.contains(fnPath)) {
-                CLIErrorHandler.warn("File " + fnPath + " has already been processed, skipping...");
-                continue;
+            if (paused) {
+                return;
             }
             fn.accept(this);
         }
@@ -73,15 +84,22 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
 
     @Override
     public void update(Observable source, Object msg) {
-        notifyObservers(source, msg);
+        if (source instanceof ChecksumCalculator && msg instanceof PauseMessage) {
+            paused = true;
+        }
     }
 
-    // TODO:
-    public HashStreamWriterMemento createMemento() {
-        return null;
+    public boolean isPaused() {
+        return paused;
     }
 
-    public void loadFromMemento(HashStreamWriterMemento memento) {
+    public HashStreamWriterMemento saveToMemento() {
+        return new HashStreamWriterMemento(
+                new HashSet<>(processedFiles)
+        );
+    }
 
+    public void restoreFromMemento(HashStreamWriterMemento memento) {
+        this.processedFiles = new HashSet<>(memento.processedFiles());
     }
 }

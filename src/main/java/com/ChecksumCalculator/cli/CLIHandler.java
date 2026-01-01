@@ -1,10 +1,8 @@
 package com.ChecksumCalculator.cli;
 
-import com.ChecksumCalculator.core.calculator.ChecksumCalculator;
-import com.ChecksumCalculator.core.calculator.MD5Calculator;
-import com.ChecksumCalculator.core.calculator.SHA1Calculator;
-import com.ChecksumCalculator.core.calculator.SHA512Calculator;
+import com.ChecksumCalculator.core.calculator.*;
 import com.ChecksumCalculator.core.verification.HashComparator;
+import com.ChecksumCalculator.core.verification.Status;
 import com.ChecksumCalculator.filesystem.builder.FSBuilder;
 import com.ChecksumCalculator.filesystem.builder.FollowLinksFSBuilder;
 import com.ChecksumCalculator.filesystem.builder.StandardFSBuilder;
@@ -19,15 +17,22 @@ import com.ChecksumCalculator.io.serializer.checksum.ChecksumSerializer;
 import com.ChecksumCalculator.io.serializer.checksum.JSONChecksumSerializer;
 import com.ChecksumCalculator.io.serializer.checksum.TextChecksumSerializer;
 import com.ChecksumCalculator.progress.ProgressReporter;
+import com.ChecksumCalculator.state.PauseController;
+import com.ChecksumCalculator.state.StateManager;
+import com.ChecksumCalculator.state.memento.CalculationStateMemento;
+import com.ChecksumCalculator.state.memento.VerificationStateMemento;
 import org.apache.commons.cli.*;
 import org.apache.commons.cli.help.HelpFormatter;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public class CLIHandler {
     private static final Set<String> VALID_ALGORITHMS = Set.of("md5", "sha1", "sha512");
@@ -268,80 +273,165 @@ public class CLIHandler {
         System.err.println("Use --help for usage information.");
     }
 
+    private record ExecutionContext(
+            PauseController pc,
+            ChecksumCalculator calculator,
+            ProgressReporter reporter,
+            FSNode root,
+            String path,
+            Format format
+    ) {}
+
+    private void executeResume() {
+        File resumeFile = new File(cmd.getOptionValue("resume"));
+        IO.println("Resuming from: " + resumeFile.getAbsolutePath());
+
+        Serializable memento = new StateManager().load(resumeFile);
+
+        if (memento instanceof VerificationStateMemento vm) {
+            ExecutionContext ctx = buildContext(vm.path(), vm.algorithm(), vm.format());
+            runVerification(ctx, new File(vm.inputFilePath()), vm);
+        } else if (memento instanceof CalculationStateMemento cm) {
+            ExecutionContext ctx = buildContext(cm.path(), cm.algorithm(), cm.format());
+            runCalculation(ctx, new File(cm.outputFilePath()), cm);
+        } else {
+            System.exit(19);
+        }
+    }
+
     private void executeVerification() {
-        ChecksumCalculator calculator = parseAlgorithm();
-        FSBuilder fsBuilder = new StandardFSBuilder();
+        PauseController pc = new PauseController();
         String path = parsePath();
         File inputFile = parseChecksumsFile();
         Format format = parseFormat(inputFile.getName());
+        FSNode root = new StandardFSBuilder().build(path);
+        report(root);
 
-        ChecksumReader cr = switch (format) {
+        ExecutionContext ctx = new ExecutionContext(
+                pc, parseAlgorithm(pc), new ProgressReporter(root.getSizeInBytes()),
+                root, path, format
+        );
+
+        runVerification(ctx, inputFile, null);
+    }
+
+    private void executeCalculation() {
+        PauseController pc = new PauseController();
+        String path = parsePath();
+        File outputFile = parseOutput();
+        Format format = parseFormat(outputFile.getName());
+        FSNode root = parseFollowLinks().build(path);
+
+        if (root.getSizeInBytes() == 0) {
+            IO.println("Warning: No files found at: " + path);
+        }
+        report(root);
+
+        ExecutionContext ctx = new ExecutionContext(
+                pc, parseAlgorithm(pc), new ProgressReporter(root.getSizeInBytes()),
+                root, path, format
+        );
+
+        runCalculation(ctx, outputFile, null);
+    }
+
+    private void runVerification(ExecutionContext ctx, File inputFile, VerificationStateMemento memento) {
+        ctx.pc().startPauseListener();
+
+        ChecksumReader reader = switch (ctx.format()) {
             case JSON -> new JSONChecksumReader(inputFile.getPath());
             case TEXT -> new TextChecksumReader(inputFile.getPath());
         };
 
-        FSNode root = fsBuilder.build(path);
+        HashComparator hc = new HashComparator(reader, ctx.calculator());
+        hc.addObserver(ctx.reporter());
 
-        report(root);
-
-        HashComparator hc = new HashComparator(cr, calculator);
-        hc.addObserver(new ProgressReporter(root.getSizeInBytes()));
-        ComparisonResultSerializer crs = new ComparisonResultSerializer(System.out);
-        crs.write(hc.compare(root));
-    }
-
-    private void executeResume() {
-        System.err.println("Resume functionality not yet implemented.");
-        System.exit(1);
-    }
-
-    private void executeCalculation() {
-        ChecksumCalculator calculator = parseAlgorithm();
-        FSBuilder fsBuilder = parseFollowLinks();
-        String path = parsePath();
-        File outputFile = parseOutput();
-        Format format = parseFormat(outputFile.getName());
-
-        FSNode root = fsBuilder.build(path);
-
-        if (root.getSizeInBytes() == 0) {
-            IO.println("Warning: No files found to process at path: " + path);
+        if (memento != null) {
+            hc.restoreFromMemento(memento.hashComparatorMemento());
+            ctx.reporter().restoreFromMemento(memento.progressReporterMemento());
         }
 
-        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-            ChecksumSerializer serializer = null;
+        Map<String, Status> statuses = hc.compare(ctx.root());
 
-            try {
-                serializer = switch (format) {
-                    case TEXT -> new TextChecksumSerializer(fos);
-                    case JSON -> new JSONChecksumSerializer(fos);
-                };
-            } catch (IOException e) {
-                CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+        if (hc.isPaused()) {
+            saveState(new VerificationStateMemento(
+                    hc.saveToMemento(),
+                    ctx.reporter().saveToMemento(),
+                    ctx.path(),
+                    inputFile.getAbsolutePath(),
+                    ctx.format(),
+                    ctx.calculator().getAlgorithm()
+            ));
+        } else {
+            new ComparisonResultSerializer(System.out).write(statuses);
+        }
+    }
+
+    private void runCalculation(ExecutionContext ctx, File outputFile, CalculationStateMemento memento) {
+        ctx.pc().startPauseListener();
+        boolean append = (memento != null);
+
+        try (FileOutputStream fos = new FileOutputStream(outputFile, append)) {
+            ChecksumSerializer serializer = switch (ctx.format()) {
+                case TEXT -> new TextChecksumSerializer(fos);
+                case JSON -> new JSONChecksumSerializer(fos);
+            };
+
+            HashStreamWriter hsw = new HashStreamWriter(serializer, ctx.calculator());
+            hsw.addObserver(ctx.reporter());
+
+            if (memento != null) {
+                hsw.restoreFromMemento(memento.hashStreamWriterMemento());
+                ctx.reporter().restoreFromMemento(memento.progressReporterMemento());
             }
 
-            assert serializer != null;
+            hsw.write(ctx.root());
 
-            report(root);
+            if (hsw.isPaused()) {
+                saveState(new CalculationStateMemento(
+                        hsw.saveToMemento(),
+                        ctx.reporter().saveToMemento(),
+                        ctx.path(),
+                        outputFile.getAbsolutePath(),
+                        ctx.format(),
+                        ctx.calculator().getAlgorithm()
+                ));
+            } else {
+                IO.println("\nDone! Results written to: " + outputFile.getAbsolutePath());
+            }
 
-            HashStreamWriter hsw = new HashStreamWriter(serializer, calculator);
-            hsw.addObserver(new ProgressReporter(root.getSizeInBytes()));
-            hsw.write(root);
-            IO.println("\nDone! Results written to: " + outputFile.getAbsolutePath());
         } catch (IOException e) {
             CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
         }
     }
 
-    private ChecksumCalculator parseAlgorithm() {
+    private ExecutionContext buildContext(String path, Algorithm algorithm, Format format) {
+        PauseController pc = new PauseController();
+        ChecksumCalculator calculator = switch (algorithm) {
+            case MD5 -> new MD5Calculator(pc);
+            case SHA1 -> new SHA1Calculator(pc);
+            case SHA512 -> new SHA512Calculator(pc);
+        };
+        FSNode root = parseFollowLinks().build(path);
+
+        return new ExecutionContext(pc, calculator, new ProgressReporter(root.getSizeInBytes()), root, path, format);
+    }
+
+    private void saveState(Serializable memento) {
+        File stateFile = parseStateFile();
+        new StateManager().save(memento, stateFile);
+        IO.println("\nProcess paused. State saved to: " + stateFile.getAbsolutePath());
+    }
+
+    private ChecksumCalculator parseAlgorithm(PauseController pc) {
         if (cmd.hasOption("algorithm")) {
             return switch (cmd.getOptionValue("algorithm").toLowerCase()) {
-                case "sha1" -> new SHA1Calculator();
-                case "sha512" -> new SHA512Calculator();
-                default -> new MD5Calculator();
+                case "sha1" -> new SHA1Calculator(pc);
+                case "sha512" -> new SHA512Calculator(pc);
+                default -> new MD5Calculator(pc);
             };
         }
-        return new MD5Calculator();
+        return new MD5Calculator(pc);
     }
 
     private File parseOutput() {
@@ -398,7 +488,7 @@ public class CLIHandler {
         System.out.println("Checksum Calculator - Calculate and verify file checksums");
         System.out.println();
         System.out.println("Usage:");
-        System.out.println("  Calculate: checksum [-p PATH] [-a ALGORITHM] [-o OUTPUT] [-f FORMAT] [-L]");
+        System.out.println("  Calculate: checksum [-p PATH] [-a ALGORITHM] [-o OUTPUT] [-f FORMAT] [-s STATE_FILE] [-L]");
         System.out.println("  Verify:    checksum -c CHECKSUMS_FILE [-p PATH] [-a ALGORITHM]");
         System.out.println("  Resume:    checksum -r STATE_FILE");
         System.out.println();
