@@ -9,16 +9,22 @@ import com.ChecksumCalculator.io.ChecksumData;
 import com.ChecksumCalculator.io.serializer.checksum.ChecksumSerializer;
 import com.ChecksumCalculator.progress.observer.Observable;
 import com.ChecksumCalculator.progress.observer.Observer;
+import com.ChecksumCalculator.state.HashStreamWriterMemento;
 
 import java.io.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class HashStreamWriter extends Observable implements FSVisitor, Observer {
     ChecksumSerializer checksumSerializer;
     ChecksumCalculator calc;
 
+    Set<String> processedFiles;
+
     public HashStreamWriter(ChecksumSerializer serializer, ChecksumCalculator calc) {
         checksumSerializer = serializer;
         this.calc = calc;
+        processedFiles = new HashSet<>();
     }
 
     public void write(FSNode root) {
@@ -28,9 +34,17 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
 
     @Override
     public void visit(FileNode node) {
-        File f = new File(node.getPath());
+        String nodePath = node.getPath();
+        if (processedFiles.contains(nodePath)) {
+            CLIErrorHandler.warn("File " + nodePath + " has already been processed, skipping...");
+            return;
+        }
 
-        notifyObservers(this, node.getPath());
+        processedFiles.add(nodePath);
+
+        File f = new File(nodePath);
+
+        notifyObservers(this, nodePath);
         try {
             String checksum = calc.calculate(new FileInputStream(f));
             checksumSerializer.write(new ChecksumData(checksum, f.getPath(), f.length()));
@@ -42,6 +56,11 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
     @Override
     public void visit(DirNode node) {
         for (FSNode fn : node.getChildren()) {
+            String fnPath = fn.getPath();
+            if (processedFiles.contains(fnPath)) {
+                CLIErrorHandler.warn("File " + fnPath + " has already been processed, skipping...");
+                continue;
+            }
             fn.accept(this);
         }
     }
@@ -55,5 +74,14 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
     @Override
     public void update(Observable source, Object msg) {
         notifyObservers(source, msg);
+    }
+
+    // TODO:
+    public HashStreamWriterMemento createMemento() {
+        return null;
+    }
+
+    public void loadFromMemento(HashStreamWriterMemento memento) {
+
     }
 }
