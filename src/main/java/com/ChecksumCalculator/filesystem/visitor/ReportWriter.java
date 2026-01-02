@@ -16,14 +16,14 @@ public class ReportWriter implements FSVisitor {
 
     @Override
     public void visit(FileNode node) {
-        writer.println("File: " + node.getPath());
-        writer.println("Size: " + node.getSizeInBytes() + " bytes");
+        writer.printf("File: %s\n", node.getPath());
+        writer.printf("Size: %s bytes\n", node.getSizeInBytes());
     }
 
     @Override
     public void visit(DirNode node) {
-        writer.println("Directory: " + node.getPath());
-        writer.println("Total Size: " + node.getSizeInBytes() + " bytes");
+        writer.printf("Directory: %s\n", node.getPath());
+        writer.printf("Total Size: %s bytes\n", node.getSizeInBytes());
 
         for (FSNode child : node.getChildren()) {
             child.accept(this);

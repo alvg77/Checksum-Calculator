@@ -4,6 +4,8 @@ import com.ChecksumCalculator.cli.CLIErrorHandler;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,8 +24,7 @@ public class FSDirector {
         File file = new File(rootPath);
 
         if (!file.exists()) {
-//            TODO:
-            System.exit(111);
+            throw new RuntimeException(String.format("File does not exist: %s", rootPath));
         }
 
         return constructNode(file);
@@ -44,7 +45,7 @@ public class FSDirector {
             return constructDirectory(file);
         }
 
-        throw new RuntimeException("Unsupported file type: " + file.getPath());
+        throw new RuntimeException(String.format("Unsupported file type: %s", file.getPath()));
     }
 
     private FSNode constructFile() {
@@ -55,8 +56,7 @@ public class FSDirector {
         File[] files = file.listFiles();
 
         if (files == null) {
-            throw new RuntimeException("Cannot read directory: " + file.getPath()
-                    + "! Please check your permissions.");
+            throw new RuntimeException(String.format("Cannot read directory: %s!",  file.getPath()));
         }
 
         List<FSNode> children = constructChildren(files);
@@ -90,7 +90,7 @@ public class FSDirector {
     private boolean shouldSkipFile(File file) {
         if (builder instanceof FollowLinksFSBuilder followBuilder) {
             if (followBuilder.hasVisited(file)) {
-                CLIErrorHandler.warn("Cycle detected, skipping: " + file.getAbsolutePath());
+                CLIErrorHandler.warn(String.format("Cycle detected, skipping: %s", file.getAbsolutePath()));
                 return true;
             }
         }

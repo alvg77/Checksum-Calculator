@@ -12,8 +12,6 @@ public class PauseController {
     public void startPauseListener() {
         Thread listenerThread = new Thread(() -> {
             Scanner scanner = new Scanner(System.in);
-            System.out.println("Listener started. Press 'p' and Enter to pause...");
-
             while (true) {
                 if (scanner.hasNextLine()) {
                     String input = scanner.nextLine();

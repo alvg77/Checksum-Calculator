@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 
 public class TextChecksumSerializer implements ChecksumSerializer {
-    private PrintWriter writer;
+    private final PrintWriter writer;
 
     public TextChecksumSerializer(OutputStream outputStream) {
         writer = new PrintWriter(outputStream);

@@ -48,8 +48,6 @@ public class ProgressReporter implements Observer {
                 throw new IllegalArgumentException("Unknown message type");
             }
         } else if (source instanceof HashStreamWriter || source instanceof HashComparator) {
-            IO.println("\n");
-
             if (msg instanceof String) {
                 bytesCompleted += bytesReadCurrentFile;
                 currentPath = (String) msg;
@@ -76,7 +74,7 @@ public class ProgressReporter implements Observer {
 
     private void refreshDisplay() {
         StringBuilder sb = new StringBuilder();
-        sb.append("\rProcessing ");
+        sb.append("Processing ");
         sb.append(currentPath);
         sb.append(" ... ");
         sb.append(bytesReadCurrentFile);

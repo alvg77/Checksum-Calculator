@@ -50,9 +50,7 @@ public class CLIHandler {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            System.err.println("Error: " + e.getMessage());
-            printHelp();
-            System.exit(1);
+            CLIErrorHandler.fatal(e.getMessage(), this::printHelp);
 
             throw new RuntimeException();
         }
@@ -68,8 +66,7 @@ public class CLIHandler {
         validateOptions();
 
         if (!validationErrors.isEmpty()) {
-            printValidationErrors();
-            System.exit(1);
+            CLIErrorHandler.fatal(validationErrors);
         }
 
         switch (mode) {
@@ -112,15 +109,15 @@ public class CLIHandler {
 
     private void validateAlgorithm() {
         if (cmd.hasOption("algorithm")) {
-            String algo = cmd.getOptionValue("algorithm");
-            if (isBlank(algo)) {
+            String algorithm = cmd.getOptionValue("algorithm");
+            if (isBlank(algorithm)) {
                 validationErrors.add("Algorithm cannot be empty");
                 return;
             }
-            if (!VALID_ALGORITHMS.contains(algo.toLowerCase())) {
+            if (!VALID_ALGORITHMS.contains(algorithm.toLowerCase())) {
                 validationErrors.add(String.format(
                         "Unknown algorithm: '%s'. Valid options are: %s",
-                        algo, String.join(", ", VALID_ALGORITHMS)
+                        algorithm, String.join(", ", VALID_ALGORITHMS)
                 ));
             }
         }
@@ -152,9 +149,9 @@ public class CLIHandler {
 
         File targetPath = new File(path);
         if (!targetPath.exists()) {
-            validationErrors.add("Path does not exist: " + path);
+            validationErrors.add(String.format("Path does not exist: %s", path));
         } else if (!targetPath.canRead()) {
-            validationErrors.add("Cannot read path (permission denied): " + path);
+            validationErrors.add(String.format("Cannot read path: %s", path));
         }
     }
 
@@ -168,11 +165,11 @@ public class CLIHandler {
 
         File checksumsFile = new File(checksumsPath);
         if (!checksumsFile.exists()) {
-            validationErrors.add("Checksums file does not exist: " + checksumsPath);
+            validationErrors.add(String.format("Checksums file does not exist: %s", checksumsPath));
         } else if (!checksumsFile.isFile()) {
-            validationErrors.add("Checksums path is not a file: " + checksumsPath);
+            validationErrors.add(String.format("Checksums path is not a file: %s", checksumsPath));
         } else if (!checksumsFile.canRead()) {
-            validationErrors.add("Cannot read checksums file (permission denied): " + checksumsPath);
+            validationErrors.add(String.format("Cannot read checksums file: %s", checksumsPath));
         }
 
         validateFormatExtensionConsistency(checksumsPath);
@@ -188,11 +185,11 @@ public class CLIHandler {
 
         File resumeFile = new File(resumePath);
         if (!resumeFile.exists()) {
-            validationErrors.add("State file does not exist: " + resumePath);
+            validationErrors.add(String.format("State file does not exist: %s", resumePath));
         } else if (!resumeFile.isFile()) {
-            validationErrors.add("State file path is not a file: " + resumePath);
+            validationErrors.add(String.format("State file path is not a file: %s", resumePath));
         } else if (!resumeFile.canRead()) {
-            validationErrors.add("Cannot read state file (permission denied): " + resumePath);
+            validationErrors.add(String.format("Cannot read state file: %s", resumePath));
         }
     }
 
@@ -202,15 +199,15 @@ public class CLIHandler {
 
         if (outputFile.exists()) {
             if (!outputFile.isFile()) {
-                validationErrors.add("Output path exists but is not a file: " + outputPath);
+                validationErrors.add(String.format("Output path exists but is not a file: %s", outputPath));
                 return;
             }
             if (!outputFile.canWrite()) {
-                validationErrors.add("Cannot write to existing output file (permission denied): " + outputPath);
+                validationErrors.add(String.format("Cannot write to existing output file (permission denied): %s", outputPath));
                 return;
             }
 
-            IO.println("Warning: Output file already exists and will be overwritten: " + outputPath);
+            CLIErrorHandler.warn(String.format("Output file already exists and will be overwritten: %s", outputPath));
         } else {
 
             File parentDir = outputFile.getParentFile();
@@ -219,12 +216,11 @@ public class CLIHandler {
             }
 
             if (!parentDir.exists()) {
-                validationErrors.add("Output directory does not exist: " + parentDir.getAbsolutePath());
+                validationErrors.add(String.format("Output directory does not exist: %s", parentDir.getAbsolutePath()));
             } else if (!parentDir.canWrite()) {
-                validationErrors.add("Cannot write to output directory (permission denied): " + parentDir.getAbsolutePath());
+                validationErrors.add(String.format("Cannot write to output directory (permission denied): %s", parentDir.getAbsolutePath()));
             }
         }
-
 
         validateFormatExtensionConsistency(outputFile.getName());
     }
@@ -249,10 +245,7 @@ public class CLIHandler {
         }
 
         if (mismatch) {
-            IO.println(String.format(
-                    "Warning: Format '%s' doesn't match file extension '%s'. Consider using %s extension.",
-                    format, extension.isEmpty() ? "(none)" : "." + extension, expectedExtension
-            ));
+            CLIErrorHandler.warn(String.format("Format %s does not match extension %s", format, expectedExtension));
         }
     }
 
@@ -262,16 +255,6 @@ public class CLIHandler {
             return "";
         }
         return fileName.substring(lastDot + 1);
-    }
-
-    private void printValidationErrors() {
-        System.err.println("Validation failed with " + validationErrors.size() + " error(s):");
-        System.err.println();
-        for (int i = 0; i < validationErrors.size(); i++) {
-            System.err.println("  " + (i + 1) + ". " + validationErrors.get(i));
-        }
-        System.err.println();
-        System.err.println("Use --help for usage information.");
     }
 
     private record ExecutionContext(
@@ -285,7 +268,7 @@ public class CLIHandler {
 
     private void executeResume() {
         File resumeFile = new File(cmd.getOptionValue("resume"));
-        IO.println("Resuming from: " + resumeFile.getAbsolutePath());
+        System.out.printf("Resuming from: %s\n", resumeFile.getAbsolutePath());
 
         Serializable memento = new StateManager().load(resumeFile);
 
@@ -296,7 +279,7 @@ public class CLIHandler {
             ExecutionContext ctx = buildContext(cm.path(), cm.algorithm(), cm.format());
             runCalculation(ctx, new File(cm.outputFilePath()), cm);
         } else {
-            System.exit(19);
+            CLIErrorHandler.fatal("Invalid state file data.");
         }
     }
 
@@ -324,7 +307,7 @@ public class CLIHandler {
         FSNode root = new FSDirector(parseFollowLinks()).construct(path);
 
         if (root.getSizeInBytes() == 0) {
-            IO.println("Warning: No files found at: " + path);
+            CLIErrorHandler.warn(String.format("Provided path contains zero bytes: %s", path));
         }
         report(root);
 
@@ -364,7 +347,9 @@ public class CLIHandler {
                     ctx.calculator().getAlgorithm()
             ));
         } else {
-            new ComparisonResultSerializer(System.out).write(statuses);
+            try (ComparisonResultSerializer comparisonResultSerializer = new ComparisonResultSerializer(System.out)) {
+                comparisonResultSerializer.write(statuses);
+            }
         }
     }
 
@@ -398,11 +383,10 @@ public class CLIHandler {
                         ctx.calculator().getAlgorithm()
                 ));
             } else {
-                IO.println("\nDone! Results written to: " + outputFile.getAbsolutePath());
+                System.out.printf("\nDone! Results written to: %s\n", outputFile.getAbsolutePath());
             }
-
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            CLIErrorHandler.fatal(e.getMessage());
         }
     }
 
@@ -421,7 +405,7 @@ public class CLIHandler {
     private void saveState(Serializable memento) {
         File stateFile = parseStateFile();
         new StateManager().save(memento, stateFile);
-        IO.println("\nProcess paused. State saved to: " + stateFile.getAbsolutePath());
+        System.out.printf("\nProcess paused. State saved to: %s\n", stateFile.getAbsolutePath());
     }
 
     private ChecksumCalculator parseAlgorithm(PauseController pc) {
@@ -498,7 +482,7 @@ public class CLIHandler {
         try {
             formatter.printOptions(options);
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            CLIErrorHandler.fatal(e.getMessage());
         }
 
         System.out.println();
@@ -516,6 +500,7 @@ public class CLIHandler {
         ReportWriter rw = new ReportWriter(System.out);
         root.accept(rw);
 
+        IO.println("\nTo pause the process press 'p' and then hit enter.");
         IO.println("\nPress any key to continue...");
         IO.readln();
     }

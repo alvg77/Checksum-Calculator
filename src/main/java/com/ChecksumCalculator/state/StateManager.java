@@ -17,7 +17,7 @@ public class StateManager {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Cannot load state: " + e.getMessage(), e);
+            throw new RuntimeException(String.format("Cannot load state: %s", e.getMessage()), e);
         }
     }
 }
