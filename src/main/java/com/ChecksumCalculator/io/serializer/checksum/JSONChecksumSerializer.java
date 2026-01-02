@@ -1,6 +1,6 @@
 package com.ChecksumCalculator.io.serializer.checksum;
 
-import com.ChecksumCalculator.cli.CLIErrorHandler;
+import com.ChecksumCalculator.exception.FileSystemException;
 import com.ChecksumCalculator.io.ChecksumData;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 
 public class JSONChecksumSerializer implements ChecksumSerializer {
     private final JsonGenerator generator;
@@ -30,7 +29,7 @@ public class JSONChecksumSerializer implements ChecksumSerializer {
             }
             generator.writeObject(data);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new FileSystemException(String.format("Error while writing checksum data: %s", e.getMessage()), e);
         }
     }
 
@@ -42,7 +41,7 @@ public class JSONChecksumSerializer implements ChecksumSerializer {
             }
             generator.close();
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new FileSystemException(String.format("Error while closing JSON checksum serializer: %s", e.getMessage()), e);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.ChecksumCalculator.io.reader;
 
-import com.ChecksumCalculator.cli.CLIErrorHandler;
+import com.ChecksumCalculator.exception.ChecksumFileException;
+import com.ChecksumCalculator.exception.FileSystemException;
 import com.ChecksumCalculator.io.ChecksumData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -8,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +26,10 @@ public class JSONChecksumReader extends ChecksumReader {
         try {
             checksumDataList = mapper.readValue(new File(filePath), new TypeReference<>() {
             });
+        } catch (JsonProcessingException e) {
+            throw new ChecksumFileException(String.format("Invalid JSON format in checksum file: %s", filePath), e);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new FileSystemException(String.format("Cannot read checksum file: %s", filePath), e);
         }
 
         assert checksumDataList != null;

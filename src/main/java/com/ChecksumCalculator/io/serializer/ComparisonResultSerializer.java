@@ -1,6 +1,6 @@
 package com.ChecksumCalculator.io.serializer;
 
-import com.ChecksumCalculator.core.verification.Status;
+import com.ChecksumCalculator.filesystem.visitor.Status;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;

@@ -1,15 +1,16 @@
-package com.ChecksumCalculator.core.calculator;
+package com.ChecksumCalculator.calculator;
 
-import com.ChecksumCalculator.cli.CLIErrorHandler;
+import com.ChecksumCalculator.exception.ChecksumCalculatorException;
+import com.ChecksumCalculator.exception.FileSystemException;
 import com.ChecksumCalculator.progress.observer.Observable;
 import com.ChecksumCalculator.state.PauseController;
 import com.ChecksumCalculator.state.PauseMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 
 public abstract class ChecksumCalculator extends Observable {
     private static final int BUFFER_SIZE = 8192;
@@ -21,7 +22,7 @@ public abstract class ChecksumCalculator extends Observable {
         this.pauseController = pauseController;
     }
 
-    public String calculate(InputStream is) {
+    public Optional<String> calculate(InputStream is) {
         byte[] buffer = new byte[BUFFER_SIZE];
         long tempRead = 0;
 
@@ -39,16 +40,16 @@ public abstract class ChecksumCalculator extends Observable {
                     tempRead = 0;
                     if (pauseController != null && pauseController.isPauseRequested()) {
                         notifyObservers(this, new PauseMessage());
-                        return null;
+                        return Optional.empty();
                     }
                 }
             }
 
-            return getHexString(md.digest());
+            return Optional.of(getHexString(md.digest()));
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new ChecksumCalculatorException("The hashing algorithm is not supported", e);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new FileSystemException("Error occurred while reading file. Could not calculate checksum.", e);
         }
 
     }

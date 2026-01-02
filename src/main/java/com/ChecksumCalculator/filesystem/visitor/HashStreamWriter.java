@@ -1,7 +1,7 @@
 package com.ChecksumCalculator.filesystem.visitor;
 
 import com.ChecksumCalculator.cli.CLIErrorHandler;
-import com.ChecksumCalculator.core.calculator.ChecksumCalculator;
+import com.ChecksumCalculator.calculator.ChecksumCalculator;
 import com.ChecksumCalculator.filesystem.node.DirNode;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 import com.ChecksumCalculator.filesystem.node.FileNode;
@@ -14,6 +14,7 @@ import com.ChecksumCalculator.state.PauseMessage;
 
 import java.io.*;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 public class HashStreamWriter extends Observable implements FSVisitor, Observer {
@@ -38,28 +39,42 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
 
     @Override
     public void visit(FileNode node) {
-        String nodePath = node.getPath();
-        if (processedFiles.contains(nodePath)) {
-            CLIErrorHandler.warn("File " + nodePath + " has already been processed, skipping...");
+        String path = node.getPath();
+
+        if (processedFiles.contains(path)) {
             return;
         }
 
-        File f = new File(nodePath);
+        File f = new File(path);
 
-        notifyObservers(this, nodePath);
+        if (!f.exists()) {
+            CLIErrorHandler.warn(String.format("Skipping %s: %s", node, "File no longer exists"));
+            return;
+        }
+
+        if (!f.canRead()) {
+            CLIErrorHandler.warn(String.format("Skipping %s: %s", node, "File is not readable"));
+            return;
+        }
+
+        notifyObservers(this, path);
+
         try {
-            String checksum = calc.calculate(new FileInputStream(f));
+            Optional<String> checksum = calc.calculate(new FileInputStream(f));
 
             if (paused) {
                 return;
             }
 
-            assert checksum != null;
+            if (checksum.isEmpty()) {
+                CLIErrorHandler.warn(String.format("File %s has no calculated checksum.", path));
+                return;
+            }
 
-            checksumSerializer.write(new ChecksumData(checksum, f.getPath(), f.length()));
-            processedFiles.add(nodePath);
+            checksumSerializer.write(new ChecksumData(checksum.get(), f.getPath(), f.length()));
+            processedFiles.add(path);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            CLIErrorHandler.warn(String.format("%s occurred while processing %s. Skipping...", path, e.getMessage()));
         }
     }
 

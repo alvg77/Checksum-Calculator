@@ -1,4 +1,4 @@
-package com.ChecksumCalculator.core.calculator;
+package com.ChecksumCalculator.calculator;
 
 public enum Algorithm {
     MD5,

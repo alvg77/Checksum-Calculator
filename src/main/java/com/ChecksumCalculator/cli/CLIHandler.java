@@ -1,8 +1,9 @@
 package com.ChecksumCalculator.cli;
 
-import com.ChecksumCalculator.core.calculator.*;
-import com.ChecksumCalculator.core.verification.HashComparator;
-import com.ChecksumCalculator.core.verification.Status;
+import com.ChecksumCalculator.calculator.*;
+import com.ChecksumCalculator.exception.ValidationException;
+import com.ChecksumCalculator.filesystem.visitor.HashComparator;
+import com.ChecksumCalculator.filesystem.visitor.Status;
 import com.ChecksumCalculator.filesystem.builder.FSBuilder;
 import com.ChecksumCalculator.filesystem.builder.FSDirector;
 import com.ChecksumCalculator.filesystem.builder.FollowLinksFSBuilder;
@@ -29,8 +30,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,7 +40,6 @@ public class CLIHandler {
     private final CommandLine cmd;
     private final Options options;
     private Mode mode;
-    private final List<String> validationErrors = new ArrayList<>();
 
     public CLIHandler(String[] args) {
         options = getOptions();
@@ -50,9 +48,7 @@ public class CLIHandler {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            CLIErrorHandler.fatal(e.getMessage(), this::printHelp);
-
-            throw new RuntimeException();
+            throw new ValidationException(e.getMessage());
         }
     }
 
@@ -64,10 +60,6 @@ public class CLIHandler {
 
         determineMode();
         validateOptions();
-
-        if (!validationErrors.isEmpty()) {
-            CLIErrorHandler.fatal(validationErrors);
-        }
 
         switch (mode) {
             case VERIFY -> executeVerification();
@@ -81,9 +73,7 @@ public class CLIHandler {
         boolean hasResume = cmd.hasOption("resume");
 
         if (hasChecksums && hasResume) {
-            validationErrors.add("Cannot use both --checksums and --resume at the same time");
-            mode = Mode.CALCULATE;
-            return;
+            throw new ValidationException("Cannot have both --checksums and --resume at the same time");
         }
 
         if (hasChecksums) {
@@ -111,11 +101,10 @@ public class CLIHandler {
         if (cmd.hasOption("algorithm")) {
             String algorithm = cmd.getOptionValue("algorithm");
             if (isBlank(algorithm)) {
-                validationErrors.add("Algorithm cannot be empty");
-                return;
+                throw new ValidationException("Algorithm cannot be empty.");
             }
             if (!VALID_ALGORITHMS.contains(algorithm.toLowerCase())) {
-                validationErrors.add(String.format(
+                throw new ValidationException(String.format(
                         "Unknown algorithm: '%s'. Valid options are: %s",
                         algorithm, String.join(", ", VALID_ALGORITHMS)
                 ));
@@ -127,11 +116,10 @@ public class CLIHandler {
         if (cmd.hasOption("format")) {
             String format = cmd.getOptionValue("format");
             if (isBlank(format)) {
-                validationErrors.add("Format cannot be empty");
-                return;
+                throw new ValidationException("Format cannot be empty");
             }
             if (!VALID_FORMATS.contains(format.toLowerCase())) {
-                validationErrors.add(String.format(
+                throw new ValidationException(String.format(
                         "Unknown format: '%s'. Valid options are: %s",
                         format, String.join(", ", VALID_FORMATS)
                 ));
@@ -143,15 +131,14 @@ public class CLIHandler {
         String path = cmd.hasOption("path") ? cmd.getOptionValue("path") : ".";
 
         if (isBlank(path)) {
-            validationErrors.add("Path cannot be empty");
-            return;
+            throw new ValidationException("Path cannot be empty");
         }
 
         File targetPath = new File(path);
         if (!targetPath.exists()) {
-            validationErrors.add(String.format("Path does not exist: %s", path));
+            throw new ValidationException(String.format("Path does not exist: %s", path));
         } else if (!targetPath.canRead()) {
-            validationErrors.add(String.format("Cannot read path: %s", path));
+            throw new ValidationException(String.format("Cannot read path: %s", path));
         }
     }
 
@@ -159,17 +146,16 @@ public class CLIHandler {
         String checksumsPath = cmd.getOptionValue("checksums");
 
         if (isBlank(checksumsPath)) {
-            validationErrors.add("Checksums file path cannot be empty");
-            return;
+            throw new ValidationException("Checksums file path cannot be empty");
         }
 
         File checksumsFile = new File(checksumsPath);
         if (!checksumsFile.exists()) {
-            validationErrors.add(String.format("Checksums file does not exist: %s", checksumsPath));
+            throw new ValidationException(String.format("Checksums file does not exist: %s", checksumsPath));
         } else if (!checksumsFile.isFile()) {
-            validationErrors.add(String.format("Checksums path is not a file: %s", checksumsPath));
+            throw new ValidationException(String.format("Checksums path is not a file: %s", checksumsPath));
         } else if (!checksumsFile.canRead()) {
-            validationErrors.add(String.format("Cannot read checksums file: %s", checksumsPath));
+            throw new ValidationException(String.format("Cannot read checksums file: %s", checksumsPath));
         }
 
         validateFormatExtensionConsistency(checksumsPath);
@@ -179,32 +165,29 @@ public class CLIHandler {
         String resumePath = cmd.getOptionValue("resume");
 
         if (isBlank(resumePath)) {
-            validationErrors.add("Resume state file path cannot be empty");
-            return;
+            throw new ValidationException("Resume state file path cannot be empty");
         }
 
         File resumeFile = new File(resumePath);
         if (!resumeFile.exists()) {
-            validationErrors.add(String.format("State file does not exist: %s", resumePath));
+            throw new ValidationException(String.format("State file does not exist: %s", resumePath));
         } else if (!resumeFile.isFile()) {
-            validationErrors.add(String.format("State file path is not a file: %s", resumePath));
+            throw new ValidationException(String.format("State file path is not a file: %s", resumePath));
         } else if (!resumeFile.canRead()) {
-            validationErrors.add(String.format("Cannot read state file: %s", resumePath));
+            throw new ValidationException(String.format("Cannot read state file: %s", resumePath));
         }
     }
 
     private void validateCalculationMode() {
         File outputFile = parseOutput();
-        String outputPath = outputFile.getAbsolutePath();
+        String outputPath = outputFile.getPath();
 
         if (outputFile.exists()) {
             if (!outputFile.isFile()) {
-                validationErrors.add(String.format("Output path exists but is not a file: %s", outputPath));
-                return;
+                throw new ValidationException(String.format("Output path exists but is not a file: %s", outputPath));
             }
             if (!outputFile.canWrite()) {
-                validationErrors.add(String.format("Cannot write to existing output file (permission denied): %s", outputPath));
-                return;
+                throw new ValidationException(String.format("Cannot write to existing output file: %s", outputPath));
             }
 
             CLIErrorHandler.warn(String.format("Output file already exists and will be overwritten: %s", outputPath));
@@ -216,9 +199,9 @@ public class CLIHandler {
             }
 
             if (!parentDir.exists()) {
-                validationErrors.add(String.format("Output directory does not exist: %s", parentDir.getAbsolutePath()));
+                throw new ValidationException(String.format("Output directory does not exist: %s", parentDir.getPath()));
             } else if (!parentDir.canWrite()) {
-                validationErrors.add(String.format("Cannot write to output directory (permission denied): %s", parentDir.getAbsolutePath()));
+                throw new ValidationException(String.format("Cannot write to output directory: %s", parentDir.getPath()));
             }
         }
 
@@ -268,7 +251,7 @@ public class CLIHandler {
 
     private void executeResume() {
         File resumeFile = new File(cmd.getOptionValue("resume"));
-        System.out.printf("Resuming from: %s\n", resumeFile.getAbsolutePath());
+        System.out.printf("Resuming from: %s\n", resumeFile.getPath());
 
         Serializable memento = new StateManager().load(resumeFile);
 
@@ -342,7 +325,7 @@ public class CLIHandler {
                     hc.saveToMemento(),
                     ctx.reporter().saveToMemento(),
                     ctx.path(),
-                    inputFile.getAbsolutePath(),
+                    inputFile.getPath(),
                     ctx.format(),
                     ctx.calculator().getAlgorithm()
             ));
@@ -378,7 +361,7 @@ public class CLIHandler {
                         hsw.saveToMemento(),
                         ctx.reporter().saveToMemento(),
                         ctx.path(),
-                        outputFile.getAbsolutePath(),
+                        outputFile.getPath(),
                         ctx.format(),
                         ctx.calculator().getAlgorithm()
                 ));

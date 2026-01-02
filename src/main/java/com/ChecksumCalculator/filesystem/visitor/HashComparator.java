@@ -1,21 +1,20 @@
-package com.ChecksumCalculator.core.verification;
+package com.ChecksumCalculator.filesystem.visitor;
 
 import com.ChecksumCalculator.cli.CLIErrorHandler;
 import com.ChecksumCalculator.io.reader.ChecksumReader;
-import com.ChecksumCalculator.core.calculator.ChecksumCalculator;
+import com.ChecksumCalculator.calculator.ChecksumCalculator;
 import com.ChecksumCalculator.filesystem.node.DirNode;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 import com.ChecksumCalculator.filesystem.node.FileNode;
-import com.ChecksumCalculator.filesystem.visitor.FSVisitor;
 import com.ChecksumCalculator.progress.observer.Observable;
 import com.ChecksumCalculator.progress.observer.Observer;
 import com.ChecksumCalculator.state.PauseMessage;
 import com.ChecksumCalculator.state.memento.HashComparatorMemento;
-import com.ChecksumCalculator.state.memento.ProgressReporterMemento;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class HashComparator extends Observable implements FSVisitor, Observer {
     ChecksumCalculator calc;
@@ -56,18 +55,34 @@ public class HashComparator extends Observable implements FSVisitor, Observer {
             return;
         }
 
+        File f = new File(path);
+
+        if (!f.exists()) {
+            CLIErrorHandler.warn(String.format("Skipping %s: %s", node, "File no longer exists"));
+            return;
+        }
+
+        if (!f.canRead()) {
+            CLIErrorHandler.warn(String.format("Skipping %s: %s", node, "File is not readable"));
+            return;
+        }
+
         notifyObservers(this, node.getPath());
-        try (FileInputStream fis = new FileInputStream(path)) {
-            String checksum = calc.calculate(fis);
+
+        try (FileInputStream fis = new FileInputStream(f)) {
+            Optional<String> checksum = calc.calculate(fis);
 
             if (paused) {
                 return;
             }
 
-            assert checksum != null;
+            if (checksum.isEmpty()) {
+                CLIErrorHandler.warn(String.format("File %s has no calculated checksum.", path));
+                return;
+            }
 
             if (hashes.containsKey(path)) {
-                if (hashes.get(path).equals(checksum)) {
+                if (hashes.get(path).equals(checksum.get())) {
                     statuses.put(path, Status.OK);
                 } else {
                     statuses.put(path, Status.MODIFIED);
@@ -76,7 +91,7 @@ public class HashComparator extends Observable implements FSVisitor, Observer {
                 statuses.put(path, Status.NEW);
             }
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            CLIErrorHandler.warn(String.format("%s occurred while processing %s. Skipping...", path, e.getMessage()));
         }
     }
 

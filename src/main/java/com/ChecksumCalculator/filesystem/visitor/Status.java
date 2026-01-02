@@ -1,4 +1,4 @@
-package com.ChecksumCalculator.core.verification;
+package com.ChecksumCalculator.filesystem.visitor;
 
 public enum Status {
     OK,

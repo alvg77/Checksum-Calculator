@@ -1,6 +1,6 @@
 package com.ChecksumCalculator.state.memento;
 
-import com.ChecksumCalculator.core.verification.Status;
+import com.ChecksumCalculator.filesystem.visitor.Status;
 
 import java.io.Serializable;
 import java.util.Map;

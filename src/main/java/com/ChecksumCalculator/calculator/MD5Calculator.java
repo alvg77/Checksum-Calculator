@@ -1,22 +1,22 @@
-package com.ChecksumCalculator.core.calculator;
+package com.ChecksumCalculator.calculator;
 
 import com.ChecksumCalculator.state.PauseController;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class SHA1Calculator extends ChecksumCalculator {
-    public SHA1Calculator(PauseController pauseController) {
+public class MD5Calculator extends ChecksumCalculator {
+    public MD5Calculator(PauseController pauseController) {
         super(pauseController);
     }
 
     @Override
     protected MessageDigest getMessageDigest() throws NoSuchAlgorithmException {
-        return MessageDigest.getInstance("SHA-1");
+        return MessageDigest.getInstance("MD5");
     }
 
     @Override
     public Algorithm getAlgorithm() {
-        return Algorithm.SHA1;
+        return Algorithm.MD5;
     }
 }

@@ -1,11 +1,10 @@
 package com.ChecksumCalculator.filesystem.builder;
 
 import com.ChecksumCalculator.cli.CLIErrorHandler;
+import com.ChecksumCalculator.exception.FileSystemException;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +23,7 @@ public class FSDirector {
         File file = new File(rootPath);
 
         if (!file.exists()) {
-            throw new RuntimeException(String.format("File does not exist: %s", rootPath));
+            throw new FileSystemException(String.format("File does not exist for path %s", rootPath));
         }
 
         return constructNode(file);
@@ -56,7 +55,7 @@ public class FSDirector {
         File[] files = file.listFiles();
 
         if (files == null) {
-            throw new RuntimeException(String.format("Cannot read directory: %s!",  file.getPath()));
+            throw new FileSystemException(String.format("Cannot read directory %s", file.getPath()));
         }
 
         List<FSNode> children = constructChildren(files);
@@ -90,7 +89,7 @@ public class FSDirector {
     private boolean shouldSkipFile(File file) {
         if (builder instanceof FollowLinksFSBuilder followBuilder) {
             if (followBuilder.hasVisited(file)) {
-                CLIErrorHandler.warn(String.format("Cycle detected, skipping: %s", file.getAbsolutePath()));
+                CLIErrorHandler.warn(String.format("Cycle detected, skipping: %s", file.getPath()));
                 return true;
             }
         }

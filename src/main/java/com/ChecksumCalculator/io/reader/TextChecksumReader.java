@@ -1,11 +1,11 @@
 package com.ChecksumCalculator.io.reader;
 
-import com.ChecksumCalculator.cli.CLIErrorHandler;
+import com.ChecksumCalculator.exception.ChecksumCalculatorException;
+import com.ChecksumCalculator.exception.FileSystemException;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,7 +37,7 @@ public class TextChecksumReader extends ChecksumReader {
                 hashes.put(path, hash);
             }
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new FileSystemException(String.format("Cannot read hashes from file: %s", filePath));
         }
 
         return hashes;
