@@ -53,7 +53,8 @@ public class CLIHandler {
             System.err.println("Error: " + e.getMessage());
             printHelp();
             System.exit(1);
-            throw new RuntimeException(e);
+
+            throw new RuntimeException();
         }
     }
 

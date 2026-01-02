@@ -33,9 +33,7 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
 
     public void write(FSNode root) {
         root.accept(this);
-//        if (!paused) {
-            checksumSerializer.close();
-
+        checksumSerializer.close();
     }
 
     @Override
@@ -53,7 +51,6 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
             String checksum = calc.calculate(new FileInputStream(f));
 
             if (paused) {
-//                checksumSerializer.close();
                 return;
             }
 
@@ -62,7 +59,7 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
             checksumSerializer.write(new ChecksumData(checksum, f.getPath(), f.length()));
             processedFiles.add(nodePath);
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            throw new UncheckedIOException(e);
         }
     }
 

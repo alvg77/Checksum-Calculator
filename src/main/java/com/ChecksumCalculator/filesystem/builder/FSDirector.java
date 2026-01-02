@@ -90,7 +90,7 @@ public class FSDirector {
     private boolean shouldSkipFile(File file) {
         if (builder instanceof FollowLinksFSBuilder followBuilder) {
             if (followBuilder.hasVisited(file)) {
-                CLIErrorHandler.warn("Warning: Cycle detected, skipping: " + file.getAbsolutePath());
+                CLIErrorHandler.warn("Cycle detected, skipping: " + file.getAbsolutePath());
                 return true;
             }
         }

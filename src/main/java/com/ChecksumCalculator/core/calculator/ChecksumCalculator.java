@@ -7,6 +7,7 @@ import com.ChecksumCalculator.state.PauseMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -23,7 +24,6 @@ public abstract class ChecksumCalculator extends Observable {
     public String calculate(InputStream is) {
         byte[] buffer = new byte[BUFFER_SIZE];
         long tempRead = 0;
-        String checksum = "";
 
         try {
             MessageDigest md = getMessageDigest();
@@ -44,15 +44,13 @@ public abstract class ChecksumCalculator extends Observable {
                 }
             }
 
-            checksum = getHexString(md.digest());
+            return getHexString(md.digest());
         } catch (NoSuchAlgorithmException e) {
-            // TODO:
-            System.exit(1342);
+            throw new RuntimeException(e);
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            throw new UncheckedIOException(e);
         }
 
-        return checksum;
     }
 
     public abstract Algorithm getAlgorithm();

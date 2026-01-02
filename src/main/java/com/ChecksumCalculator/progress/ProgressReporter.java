@@ -45,7 +45,7 @@ public class ProgressReporter implements Observer {
                     }
                 }
             } else {
-                CLIErrorHandler.fatal("Unexpected message type", CLIErrorHandler.ErrorType.IO); // TODO:
+                throw new IllegalArgumentException("Unknown message type");
             }
         } else if (source instanceof HashStreamWriter || source instanceof HashComparator) {
             IO.println("\n");
@@ -55,10 +55,10 @@ public class ProgressReporter implements Observer {
                 currentPath = (String) msg;
                 bytesReadCurrentFile = 0;
             } else {
-                CLIErrorHandler.fatal("Unexpected message type", CLIErrorHandler.ErrorType.IO); // TODO:
+                throw new IllegalArgumentException("Unknown message type");
             }
         } else {
-            CLIErrorHandler.fatal("Unexpected message source", CLIErrorHandler.ErrorType.IO); // TODO:
+            throw new IllegalArgumentException("Unknown message source");
         }
 
         refreshDisplay();

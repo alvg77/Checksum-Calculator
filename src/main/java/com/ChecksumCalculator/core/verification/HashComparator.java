@@ -76,7 +76,7 @@ public class HashComparator extends Observable implements FSVisitor, Observer {
                 statuses.put(path, Status.NEW);
             }
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            throw new UncheckedIOException(e);
         }
     }
 

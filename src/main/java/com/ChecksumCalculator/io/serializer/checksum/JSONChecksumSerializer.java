@@ -30,7 +30,7 @@ public class JSONChecksumSerializer implements ChecksumSerializer {
             }
             generator.writeObject(data);
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -42,7 +42,7 @@ public class JSONChecksumSerializer implements ChecksumSerializer {
             }
             generator.close();
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            throw new UncheckedIOException(e);
         }
     }
 }

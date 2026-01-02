@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class JSONChecksumReader extends ChecksumReader {
             checksumDataList = mapper.readValue(new File(filePath), new TypeReference<>() {
             });
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            throw new UncheckedIOException(e);
         }
 
         assert checksumDataList != null;

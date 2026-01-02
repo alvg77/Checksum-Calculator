@@ -5,6 +5,7 @@ import com.ChecksumCalculator.cli.CLIErrorHandler;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,7 +37,7 @@ public class TextChecksumReader extends ChecksumReader {
                 hashes.put(path, hash);
             }
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            throw new UncheckedIOException(e);
         }
 
         return hashes;

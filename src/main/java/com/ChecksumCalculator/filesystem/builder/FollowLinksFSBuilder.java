@@ -1,11 +1,11 @@
 package com.ChecksumCalculator.filesystem.builder;
 
-import com.ChecksumCalculator.cli.CLIErrorHandler;
 import mslinks.ShellLink;
 import mslinks.ShellLinkException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -45,8 +45,7 @@ public class FollowLinksFSBuilder extends AbstractFSBuilder{
                 Path linkPath = currentFile.toPath().toRealPath();
                 return linkPath.toFile();
             } catch (IOException e) {
-                CLIErrorHandler.fatal("Cannot follow symlink: " + e.getMessage(),
-                        CLIErrorHandler.ErrorType.IO);
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -55,9 +54,10 @@ public class FollowLinksFSBuilder extends AbstractFSBuilder{
                 ShellLink link = new ShellLink(currentFile);
                 String targetPath = link.resolveTarget();
                 return new File(targetPath);
-            } catch (ShellLinkException | IOException e) {
-                CLIErrorHandler.fatal("Cannot follow windows shortcut: " + e.getMessage(),
-                        CLIErrorHandler.ErrorType.IO);
+            } catch (ShellLinkException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -78,7 +78,7 @@ public class FollowLinksFSBuilder extends AbstractFSBuilder{
             String realPath = file.toPath().toRealPath().toString();
             visitedPaths.add(realPath);
         } catch (IOException e) {
-            CLIErrorHandler.fatal(e.getMessage(), CLIErrorHandler.ErrorType.IO);
+            throw new UncheckedIOException(e);
         }
     }
 }
