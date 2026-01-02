@@ -12,7 +12,7 @@ public class SHA512Calculator extends ChecksumCalculator {
 
     @Override
     protected MessageDigest getMessageDigest() throws NoSuchAlgorithmException {
-        return MessageDigest.getInstance("SHA-1");
+        return MessageDigest.getInstance("SHA-512");
     }
 
     @Override
