@@ -4,6 +4,7 @@ import com.ChecksumCalculator.core.calculator.*;
 import com.ChecksumCalculator.core.verification.HashComparator;
 import com.ChecksumCalculator.core.verification.Status;
 import com.ChecksumCalculator.filesystem.builder.FSBuilder;
+import com.ChecksumCalculator.filesystem.builder.FSDirector;
 import com.ChecksumCalculator.filesystem.builder.FollowLinksFSBuilder;
 import com.ChecksumCalculator.filesystem.builder.StandardFSBuilder;
 import com.ChecksumCalculator.filesystem.node.FSNode;
@@ -32,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public class CLIHandler {
     private static final Set<String> VALID_ALGORITHMS = Set.of("md5", "sha1", "sha512");
@@ -304,7 +304,7 @@ public class CLIHandler {
         String path = parsePath();
         File inputFile = parseChecksumsFile();
         Format format = parseFormat(inputFile.getName());
-        FSNode root = new StandardFSBuilder().build(path);
+        FSNode root = new FSDirector(parseFollowLinks()).construct(path);
         report(root);
 
         ExecutionContext ctx = new ExecutionContext(
@@ -320,7 +320,7 @@ public class CLIHandler {
         String path = parsePath();
         File outputFile = parseOutput();
         Format format = parseFormat(outputFile.getName());
-        FSNode root = parseFollowLinks().build(path);
+        FSNode root = new FSDirector(parseFollowLinks()).construct(path);
 
         if (root.getSizeInBytes() == 0) {
             IO.println("Warning: No files found at: " + path);
@@ -412,7 +412,7 @@ public class CLIHandler {
             case SHA1 -> new SHA1Calculator(pc);
             case SHA512 -> new SHA512Calculator(pc);
         };
-        FSNode root = parseFollowLinks().build(path);
+        FSNode root = new FSDirector(parseFollowLinks()).construct(path);
 
         return new ExecutionContext(pc, calculator, new ProgressReporter(root.getSizeInBytes()), root, path, format);
     }
