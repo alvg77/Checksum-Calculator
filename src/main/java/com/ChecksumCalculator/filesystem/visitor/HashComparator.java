@@ -107,10 +107,6 @@ public class HashComparator extends Observable implements FSVisitor, Observer {
         }
     }
 
-    public boolean isPaused() {
-        return paused;
-    }
-
     @Override
     public void addObserver(Observer observer) {
         super.addObserver(observer);

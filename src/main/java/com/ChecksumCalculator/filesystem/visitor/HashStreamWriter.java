@@ -103,10 +103,6 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
         }
     }
 
-    public boolean isPaused() {
-        return paused;
-    }
-
     public HashStreamWriterMemento saveToMemento() {
         return new HashStreamWriterMemento(
                 new HashSet<>(processedFiles)

@@ -33,7 +33,6 @@ public class CommandExecutor {
         ChecksumCalculator checksumCalculator = config.parseAlgorithm(pauseController);
         String path = config.parsePath();
         FSNode root = config.buildFS(path);
-        ProgressReporter reporter = new ProgressReporter(root.getSizeInBytes());
 
         if (root.getSizeInBytes() == 0) {
             CLIErrorHandler.warn(String.format("Provided path contains zero bytes: %s", config.parsePath()));
@@ -105,10 +104,7 @@ public class CommandExecutor {
         boolean append = (memento != null);
 
         try (FileOutputStream fos = new FileOutputStream(outputFile, append)) {
-            ChecksumSerializer checksumSerializer = switch (ctx.format()) {
-                case TEXT -> new TextChecksumSerializer(fos);
-                case JSON -> new JSONChecksumSerializer(fos);
-            };
+            ChecksumSerializer checksumSerializer = createChecksumSerializer(ctx.format(), fos);
 
             HashStreamWriter hashStreamWriter = new HashStreamWriter(checksumSerializer, ctx.checksumCalculator());
             hashStreamWriter.addObserver(ctx.progressReporter());
@@ -141,10 +137,7 @@ public class CommandExecutor {
     private void executeVerification(CommandContext ctx, File inputFile, VerificationStateMemento memento) {
         ctx.pauseController().startPauseListener();
 
-        ChecksumReader reader = switch (ctx.format()) {
-            case JSON -> new JSONChecksumReader(inputFile.getPath());
-            case TEXT -> new TextChecksumReader(inputFile.getPath());
-        };
+        ChecksumReader reader = createChecksumReader(ctx.format(), inputFile);
 
         HashComparator hashComparator = new HashComparator(reader, ctx.checksumCalculator());
         hashComparator.addObserver(ctx.progressReporter());

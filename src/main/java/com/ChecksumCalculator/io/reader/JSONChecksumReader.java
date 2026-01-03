@@ -21,7 +21,7 @@ public class JSONChecksumReader extends ChecksumReader {
     @Override
     public Map<String, String> readHashes() {
         ObjectMapper mapper = new ObjectMapper();
-        List<ChecksumData> checksumDataList = null;
+        List<ChecksumData> checksumDataList;
 
         try {
             checksumDataList = mapper.readValue(new File(filePath), new TypeReference<>() {
@@ -31,8 +31,6 @@ public class JSONChecksumReader extends ChecksumReader {
         } catch (IOException e) {
             throw new FileSystemException(String.format("Cannot read checksum file: %s", filePath), e);
         }
-
-        assert checksumDataList != null;
 
         Map<String, String> hashes = new HashMap<>();
         for (ChecksumData checksumData : checksumDataList) {

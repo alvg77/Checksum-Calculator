@@ -5,15 +5,10 @@ import org.apache.commons.cli.*;
 import org.apache.commons.cli.help.HelpFormatter;
 
 import java.io.IOException;
-import java.util.Set;
 
 public class CLIHandler {
-    private static final Set<String> VALID_ALGORITHMS = Set.of("md5", "sha1", "sha512");
-    private static final Set<String> VALID_FORMATS = Set.of("text", "json");
-
     private final CommandLine cmd;
     private final Options options;
-    private Mode mode;
 
     public CLIHandler(String[] args) {
         options = getOptions();
