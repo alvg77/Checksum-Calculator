@@ -1,17 +1,19 @@
 package com.ChecksumCalculator.filesystem.visitor;
 
-import com.ChecksumCalculator.cli.CLIErrorHandler;
-import com.ChecksumCalculator.io.reader.ChecksumReader;
 import com.ChecksumCalculator.calculator.ChecksumCalculator;
+import com.ChecksumCalculator.cli.CLIErrorHandler;
 import com.ChecksumCalculator.filesystem.node.DirNode;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 import com.ChecksumCalculator.filesystem.node.FileNode;
+import com.ChecksumCalculator.io.reader.ChecksumReader;
 import com.ChecksumCalculator.progress.observer.Observable;
 import com.ChecksumCalculator.progress.observer.Observer;
 import com.ChecksumCalculator.state.PauseMessage;
 import com.ChecksumCalculator.state.memento.HashComparatorMemento;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -122,7 +124,9 @@ public class HashComparator extends Observable implements FSVisitor, Observer {
         }
     }
 
-    public HashComparatorMemento saveToMemento() { return new HashComparatorMemento(new HashMap<>(statuses)); }
+    public HashComparatorMemento saveToMemento() {
+        return new HashComparatorMemento(new HashMap<>(statuses));
+    }
 
     public void restoreFromMemento(HashComparatorMemento memento) {
         Map<String, Status> tempStatuses = memento.statuses();

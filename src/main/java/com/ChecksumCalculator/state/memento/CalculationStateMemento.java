@@ -1,7 +1,7 @@
 package com.ChecksumCalculator.state.memento;
 
-import com.ChecksumCalculator.cli.Format;
 import com.ChecksumCalculator.calculator.Algorithm;
+import com.ChecksumCalculator.cli.Format;
 
 import java.io.Serializable;
 

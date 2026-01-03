@@ -1,3 +1,4 @@
 package com.ChecksumCalculator.state;
 
-public record PauseMessage() { }
+public record PauseMessage() {
+}

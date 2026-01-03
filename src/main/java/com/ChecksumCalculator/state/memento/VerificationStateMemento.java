@@ -1,7 +1,7 @@
 package com.ChecksumCalculator.state.memento;
 
-import com.ChecksumCalculator.cli.Format;
 import com.ChecksumCalculator.calculator.Algorithm;
+import com.ChecksumCalculator.cli.Format;
 
 import java.io.Serializable;
 
@@ -10,4 +10,5 @@ public record VerificationStateMemento(HashComparatorMemento hashComparatorMemen
                                        String path,
                                        String inputFilePath,
                                        Format format,
-                                       Algorithm algorithm) implements Serializable { }
+                                       Algorithm algorithm) implements Serializable {
+}

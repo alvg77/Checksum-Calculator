@@ -1,5 +1,6 @@
 package com.ChecksumCalculator.io.serializer.checksum;
 
+import com.ChecksumCalculator.exception.ChecksumFileException;
 import com.ChecksumCalculator.exception.FileSystemException;
 import com.ChecksumCalculator.io.ChecksumData;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -13,9 +14,13 @@ public class JSONChecksumSerializer implements ChecksumSerializer {
     private final JsonGenerator generator;
     private boolean started = false;
 
-    public JSONChecksumSerializer(OutputStream os) throws IOException {
+    public JSONChecksumSerializer(OutputStream os) {
         ObjectMapper mapper = new ObjectMapper();
-        this.generator = mapper.getFactory().createGenerator(os);
+        try {
+            this.generator = mapper.getFactory().createGenerator(os);
+        } catch (IOException e) {
+            throw new ChecksumFileException("Failed to create JSON generator", e);
+        }
         DefaultPrettyPrinter printer = new DefaultPrettyPrinter();
         generator.setPrettyPrinter(printer);
     }

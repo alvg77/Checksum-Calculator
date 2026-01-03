@@ -1,7 +1,7 @@
 package com.ChecksumCalculator.filesystem.visitor;
 
-import com.ChecksumCalculator.cli.CLIErrorHandler;
 import com.ChecksumCalculator.calculator.ChecksumCalculator;
+import com.ChecksumCalculator.cli.CLIErrorHandler;
 import com.ChecksumCalculator.filesystem.node.DirNode;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 import com.ChecksumCalculator.filesystem.node.FileNode;
@@ -9,10 +9,12 @@ import com.ChecksumCalculator.io.ChecksumData;
 import com.ChecksumCalculator.io.serializer.checksum.ChecksumSerializer;
 import com.ChecksumCalculator.progress.observer.Observable;
 import com.ChecksumCalculator.progress.observer.Observer;
-import com.ChecksumCalculator.state.memento.HashStreamWriterMemento;
 import com.ChecksumCalculator.state.PauseMessage;
+import com.ChecksumCalculator.state.memento.HashStreamWriterMemento;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;

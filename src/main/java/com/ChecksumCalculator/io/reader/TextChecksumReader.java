@@ -1,6 +1,5 @@
 package com.ChecksumCalculator.io.reader;
 
-import com.ChecksumCalculator.exception.ChecksumCalculatorException;
 import com.ChecksumCalculator.exception.FileSystemException;
 
 import java.io.BufferedReader;

@@ -1,7 +1,5 @@
 package com.ChecksumCalculator.cli;
 
-import java.util.List;
-
 public class CLIErrorHandler {
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_RESET = "\u001B[0m";

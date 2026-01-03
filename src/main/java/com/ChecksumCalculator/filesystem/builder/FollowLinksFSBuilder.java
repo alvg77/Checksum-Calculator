@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
-public class FollowLinksFSBuilder extends AbstractFSBuilder{
+public class FollowLinksFSBuilder extends AbstractFSBuilder {
     private final Set<String> visitedPaths;
 
     public FollowLinksFSBuilder() {
