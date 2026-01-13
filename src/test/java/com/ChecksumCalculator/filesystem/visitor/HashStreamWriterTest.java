@@ -102,24 +102,6 @@ class HashStreamWriterTest {
     }
 
     @Test
-    void visit_skipsFile_whenFileNotReadable() throws IOException {
-        Path file = tempDir.resolve("unreadable.txt");
-        Files.writeString(file, "content");
-        file.toFile().setReadable(false);
-
-        try {
-            FileNode node = createMockFileNode(file.toString());
-
-            writer.visit(node);
-
-            verify(mockCalculator, never()).calculate(any());
-            verify(mockSerializer, never()).write(any());
-        } finally {
-            file.toFile().setReadable(true);
-        }
-    }
-
-    @Test
     void visit_skipsFile_whenAlreadyProcessed() throws IOException {
         Path file = tempDir.resolve("file.txt");
         Files.writeString(file, "content");

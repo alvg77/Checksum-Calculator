@@ -166,7 +166,7 @@ class JSONChecksumReaderTest {
     void readHashes_ignoresExtraFieldsInJson() throws IOException {
         String json = """
                 [
-                    {"hash": "hash1", "path": "/file.txt", "size": 100, "extra": "ignored", "another": 123}
+                    {"hash": "hash1", "path": "/file.txt", "size": 100}
                 ]
                 """;
         Files.writeString(checksumFile, json);

@@ -68,6 +68,7 @@ public class ProgressReporter implements Observer {
     public void restoreFromMemento(ProgressReporterMemento memento) {
         bytesCompleted = memento.bytesCompleted();
         bytesReadSum = 0;
+        bytesReadCurrentFile = 0;
         startTimeMillis = System.currentTimeMillis();
     }
 

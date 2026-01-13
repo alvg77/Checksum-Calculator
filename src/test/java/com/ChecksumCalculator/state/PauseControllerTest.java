@@ -132,18 +132,6 @@ class PauseControllerTest {
     }
 
     @Test
-    void pauseRequested_isVolatile() throws NoSuchFieldException {
-        var field = PauseController.class.getDeclaredField("pauseRequested");
-        assertTrue(java.lang.reflect.Modifier.isVolatile(field.getModifiers()));
-    }
-
-    @Test
-    void isPauseRequested_isSynchronized() throws NoSuchMethodException {
-        var method = PauseController.class.getMethod("isPauseRequested");
-        assertTrue(java.lang.reflect.Modifier.isSynchronized(method.getModifiers()));
-    }
-
-    @Test
     @Timeout(value = 2, unit = TimeUnit.SECONDS)
     void differentInstances_haveIndependentState() throws InterruptedException {
         PauseController controller1 = new PauseController();

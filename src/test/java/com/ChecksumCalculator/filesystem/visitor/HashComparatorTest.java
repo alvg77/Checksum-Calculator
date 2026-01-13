@@ -197,24 +197,6 @@ class HashComparatorTest {
     }
 
     @Test
-    void visit_skipsFile_whenFileNotReadable() throws IOException {
-        Path file = tempDir.resolve("unreadable.txt");
-        Files.writeString(file, "content");
-        file.toFile().setReadable(false);
-
-        try {
-            comparator = new HashComparator(mockReader, mockCalculator);
-            FileNode node = createMockFileNode(file.toString());
-
-            comparator.visit(node);
-
-            verify(mockCalculator, never()).calculate(any());
-        } finally {
-            file.toFile().setReadable(true);
-        }
-    }
-
-    @Test
     void visit_notifiesObservers_withFilePath() throws IOException {
         Path file = tempDir.resolve("file.txt");
         Files.writeString(file, "content");

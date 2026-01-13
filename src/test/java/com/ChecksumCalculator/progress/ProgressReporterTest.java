@@ -39,7 +39,7 @@ class ProgressReporterTest {
 
     @Test
     void update_handlesIntegerMessage() {
-        reporter.update(mockCalculator, Integer.valueOf(500));
+        reporter.update(mockCalculator, 500);
         reporter.update(mockWriter, "/file.txt");
 
         ProgressReporterMemento memento = reporter.saveToMemento();

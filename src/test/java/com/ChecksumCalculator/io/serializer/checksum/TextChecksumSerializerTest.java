@@ -109,7 +109,7 @@ class TextChecksumSerializerTest {
         int count = 10000;
 
         for (int i = 0; i < count; i++) {
-            serializer.write(new ChecksumData("hash" + i, "/file" + i + ".txt", (long) i));
+            serializer.write(new ChecksumData("hash" + i, "/file" + i + ".txt", i));
         }
         serializer.close();
 

@@ -17,7 +17,7 @@ public class TextChecksumReader extends ChecksumReader {
     public Map<String, String> readHashes() {
         Map<String, String> hashes = new HashMap<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+        try (FileReader fr = new FileReader(filePath); BufferedReader reader = new BufferedReader(fr)) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isBlank()) continue;

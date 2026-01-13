@@ -69,14 +69,14 @@ public class HashComparator extends Observable implements FSVisitor, Observer {
             return;
         }
 
+        if (paused) {
+            return;
+        }
+
         notifyObservers(this, node.getPath());
 
         try (FileInputStream fis = new FileInputStream(f)) {
             Optional<String> checksum = calc.calculate(fis);
-
-            if (paused) {
-                return;
-            }
 
             if (checksum.isEmpty()) {
                 CLIErrorHandler.warn(String.format("File %s has no calculated checksum.", path));

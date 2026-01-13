@@ -6,7 +6,7 @@ import java.io.*;
 
 public class StateManager {
     public void save(Serializable memento, File file) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
+        try (FileOutputStream fos = new FileOutputStream(file); ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(memento);
         } catch (IOException e) {
             throw new FileSystemException(String.format("Could not save state to %s", file.getAbsolutePath()), e);
@@ -14,7 +14,8 @@ public class StateManager {
     }
 
     public Serializable load(File file) {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+        try (FileInputStream fis = new FileInputStream(file);
+             ObjectInputStream ois = new ObjectInputStream(fis)) {
             return (Serializable) ois.readObject();
         } catch (IOException e) {
             throw new FileSystemException(String.format("Cannot load memento from %s.", file.getPath()), e);

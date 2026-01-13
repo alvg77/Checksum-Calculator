@@ -59,14 +59,15 @@ public class HashStreamWriter extends Observable implements FSVisitor, Observer 
             return;
         }
 
+        if (paused) {
+            return;
+        }
+
         notifyObservers(this, path);
 
-        try {
-            Optional<String> checksum = calc.calculate(new FileInputStream(f));
+        try (FileInputStream fis = new FileInputStream(f)) {
+            Optional<String> checksum = calc.calculate(fis);
 
-            if (paused) {
-                return;
-            }
 
             if (checksum.isEmpty()) {
                 CLIErrorHandler.warn(String.format("File %s has no calculated checksum.", path));
