@@ -112,7 +112,7 @@ class PauseControllerTest {
     @Test
     @Timeout(value = 2, unit = TimeUnit.SECONDS)
     void startPauseListener_handles_streamEndingWithoutP() throws InterruptedException {
-        System.setIn(new ByteArrayInputStream("not p\n".getBytes()));
+        System.setIn(new ByteArrayInputStream("not\n".getBytes()));
 
         controller.startPauseListener();
         Thread.sleep(100);
