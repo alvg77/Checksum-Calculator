@@ -11,11 +11,7 @@ import com.ChecksumCalculator.filesystem.node.DirNode;
 import com.ChecksumCalculator.filesystem.node.FSNode;
 import com.ChecksumCalculator.filesystem.node.FileNode;
 import com.ChecksumCalculator.state.PauseController;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -29,7 +25,6 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CLIConfigTest {
-
     @TempDir
     Path tempDir;
 
@@ -228,7 +223,7 @@ public class CLIConfigTest {
     @Test
     void validateVerificationMode_passesForExistingChecksumsFile() throws ParseException, IOException {
         Path checksumFile = tempDir.resolve("checksums.txt");
-        Files.writeString(checksumFile, "abc123 /file.txt 100");
+        Files.writeString(checksumFile, "hashing /file.txt 100");
 
         CLIConfig config = createConfig("-c", checksumFile.toString());
 
