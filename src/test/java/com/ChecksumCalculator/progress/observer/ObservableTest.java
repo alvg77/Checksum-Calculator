@@ -23,6 +23,21 @@ class ObservableTest {
     }
 
     @Test
+    void subclass_canNotifyObservers() {
+        class ConcreteObservable extends Observable {
+            void doSomething() {
+                notifyObservers(this, "something happened");
+            }
+        }
+
+        ConcreteObservable concrete = new ConcreteObservable();
+        concrete.addObserver(mockObserver1);
+        concrete.doSomething();
+
+        verify(mockObserver1).update(concrete, "something happened");
+    }
+
+    @Test
     void addObserver_registersObserver() {
         observable.addObserver(mockObserver1);
         observable.notifyObservers(observable, "test");
@@ -132,20 +147,5 @@ class ObservableTest {
         observable.notifyObservers(observable, "event3");
 
         assertEquals(List.of("event1", "event2"), received);
-    }
-
-    @Test
-    void subclass_canNotifyObservers() {
-        class ConcreteObservable extends Observable {
-            void doSomething() {
-                notifyObservers(this, "something happened");
-            }
-        }
-
-        ConcreteObservable concrete = new ConcreteObservable();
-        concrete.addObserver(mockObserver1);
-        concrete.doSomething();
-
-        verify(mockObserver1).update(concrete, "something happened");
     }
 }

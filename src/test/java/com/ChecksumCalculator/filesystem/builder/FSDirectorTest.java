@@ -19,14 +19,13 @@ import static org.junit.jupiter.api.Assertions.*;
 public class FSDirectorTest {
 
     private FSDirector director;
-    private StandardFSBuilder builder;
 
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        builder = new StandardFSBuilder();
+        StandardFSBuilder builder = new StandardFSBuilder();
         director = new FSDirector(builder);
     }
 
@@ -92,10 +91,10 @@ public class FSDirectorTest {
         DirNode parentNode = (DirNode) result;
         assertEquals(1, parentNode.getChildren().size());
 
-        DirNode childNode = (DirNode) parentNode.getChildren().get(0);
+        DirNode childNode = (DirNode) parentNode.getChildren().getFirst();
         assertEquals(1, childNode.getChildren().size());
 
-        DirNode grandchildNode = (DirNode) childNode.getChildren().get(0);
+        DirNode grandchildNode = (DirNode) childNode.getChildren().getFirst();
         assertEquals(1, grandchildNode.getChildren().size());
     }
 

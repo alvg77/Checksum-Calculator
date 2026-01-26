@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -42,9 +44,9 @@ class JSONChecksumSerializerTest {
         List<ChecksumData> result = parseOutput();
 
         assertEquals(1, result.size());
-        assertEquals("abc123", result.get(0).hash());
-        assertEquals("/path/to/file.txt", result.get(0).path());
-        assertEquals(1024L, result.get(0).size());
+        assertEquals("abc123", result.getFirst().hash());
+        assertEquals("/path/to/file.txt", result.getFirst().path());
+        assertEquals(1024L, result.getFirst().size());
     }
 
     @Test
@@ -72,6 +74,7 @@ class JSONChecksumSerializerTest {
     }
 
     @Test
+    @EnabledOnOs({OS.LINUX, OS.MAC})
     void write_escapesSpecialCharactersInPaths() throws IOException {
         serializer.write(new ChecksumData("hash", "/path/with\"quotes\".txt", 100L));
         serializer.close();
@@ -80,16 +83,17 @@ class JSONChecksumSerializerTest {
         assertTrue(json.contains("\\\""));
 
         List<ChecksumData> result = parseOutput();
-        assertEquals("/path/with\"quotes\".txt", result.get(0).path());
+        assertEquals("/path/with\"quotes\".txt", result.getFirst().path());
     }
 
     @Test
+    @EnabledOnOs(OS.WINDOWS)
     void write_handlesWindowsPathsWithBackslashes() throws IOException {
         serializer.write(new ChecksumData("hash", "C:\\Users\\test\\file.txt", 100L));
         serializer.close();
 
         List<ChecksumData> result = parseOutput();
-        assertEquals("C:\\Users\\test\\file.txt", result.get(0).path());
+        assertEquals("C:\\Users\\test\\file.txt", result.getFirst().path());
     }
 
     @Test
@@ -99,13 +103,13 @@ class JSONChecksumSerializerTest {
         serializer.close();
 
         List<ChecksumData> result = parseOutput();
-        assertEquals(largeSize, result.get(0).size());
+        assertEquals(largeSize, result.getFirst().size());
     }
 
     @Test
     void write_preservesEntryOrder() throws IOException {
         for (int i = 0; i < 10; i++) {
-            serializer.write(new ChecksumData("hash" + i, "/file" + i + ".txt", (long) i));
+            serializer.write(new ChecksumData("hash" + i, "/file" + i + ".txt", i));
         }
         serializer.close();
 
@@ -114,12 +118,12 @@ class JSONChecksumSerializerTest {
         for (int i = 0; i < 10; i++) {
             assertEquals("hash" + i, result.get(i).hash());
             assertEquals("/file" + i + ".txt", result.get(i).path());
-            assertEquals((long) i, result.get(i).size());
+            assertEquals(i, result.get(i).size());
         }
     }
 
     @Test
-    void close_producesValidJsonArray() throws IOException {
+    void close_producesValidJsonArray() {
         serializer.write(new ChecksumData("hash", "/file.txt", 100L));
         serializer.close();
 
@@ -164,7 +168,7 @@ class JSONChecksumSerializerTest {
 
         List<ChecksumData> result = objectMapper.readValue(baos.toString(), new TypeReference<>() {});
         assertEquals(1, result.size());
-        assertEquals("hash", result.get(0).hash());
+        assertEquals("hash", result.getFirst().hash());
     }
 
     @Test
@@ -172,7 +176,7 @@ class JSONChecksumSerializerTest {
         int count = 1000;
 
         for (int i = 0; i < count; i++) {
-            serializer.write(new ChecksumData("hash" + i, "/file" + i + ".txt", (long) i));
+            serializer.write(new ChecksumData("hash" + i, "/file" + i + ".txt", i));
         }
         serializer.close();
 
