@@ -3,12 +3,12 @@ package com.ChecksumCalculator.filesystem.node;
 import com.ChecksumCalculator.filesystem.visitor.FSVisitor;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class FileNodeTest {
-
     @Test
     void constructor_setsPathAndSize() {
         FileNode node = new FileNode("/path/to/file.txt", 1024);

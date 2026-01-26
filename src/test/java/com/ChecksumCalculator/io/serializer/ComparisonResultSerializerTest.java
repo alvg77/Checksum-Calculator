@@ -12,7 +12,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ComparisonResultSerializerTest {
-
     private ByteArrayOutputStream outputStream;
     private ComparisonResultSerializer serializer;
 

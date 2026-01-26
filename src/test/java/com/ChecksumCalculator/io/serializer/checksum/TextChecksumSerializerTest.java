@@ -10,7 +10,6 @@ import java.io.ByteArrayOutputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TextChecksumSerializerTest {
-
     private ByteArrayOutputStream outputStream;
     private TextChecksumSerializer serializer;
 

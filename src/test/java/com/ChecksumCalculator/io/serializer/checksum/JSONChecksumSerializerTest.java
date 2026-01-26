@@ -16,7 +16,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JSONChecksumSerializerTest {
-
     private ByteArrayOutputStream outputStream;
     private JSONChecksumSerializer serializer;
     private ObjectMapper objectMapper;
@@ -166,7 +165,8 @@ class JSONChecksumSerializerTest {
             autoSerializer.write(new ChecksumData("hash", "/auto.txt", 50L));
         }
 
-        List<ChecksumData> result = objectMapper.readValue(baos.toString(), new TypeReference<>() {});
+        List<ChecksumData> result = objectMapper.readValue(baos.toString(), new TypeReference<>() {
+        });
         assertEquals(1, result.size());
         assertEquals("hash", result.getFirst().hash());
     }
@@ -185,6 +185,7 @@ class JSONChecksumSerializerTest {
     }
 
     private List<ChecksumData> parseOutput() throws IOException {
-        return objectMapper.readValue(outputStream.toString(), new TypeReference<>() {});
+        return objectMapper.readValue(outputStream.toString(), new TypeReference<>() {
+        });
     }
 }

@@ -10,142 +10,147 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ObservableTest {
+    private TestableObservable observable;
+    private Observer mockObserver;
 
-    private Observable observable;
-    private Observer mockObserver1;
-    private Observer mockObserver2;
+    private static class TestableObservable extends Observable {
+        public void triggerNotification(Observable source, Object message) {
+            notifyObservers(source, message);
+        }
+
+        public void triggerNotification(Object message) {
+            notifyObservers(this, message);
+        }
+    }
 
     @BeforeEach
     void setUp() {
-        observable = new Observable();
-        mockObserver1 = mock(Observer.class);
-        mockObserver2 = mock(Observer.class);
+        observable = new TestableObservable();
+        mockObserver = mock(Observer.class);
     }
 
     @Test
-    void subclass_canNotifyObservers() {
-        class ConcreteObservable extends Observable {
-            void doSomething() {
-                notifyObservers(this, "something happened");
-            }
-        }
+    void addObserver_registeredObserverReceivesNotifications() {
+        observable.addObserver(mockObserver);
 
-        ConcreteObservable concrete = new ConcreteObservable();
-        concrete.addObserver(mockObserver1);
-        concrete.doSomething();
+        observable.triggerNotification("event");
 
-        verify(mockObserver1).update(concrete, "something happened");
+        verify(mockObserver).update(observable, "event");
     }
 
     @Test
-    void addObserver_registersObserver() {
-        observable.addObserver(mockObserver1);
-        observable.notifyObservers(observable, "test");
+    void addObserver_multipleObserversAllReceiveNotifications() {
+        Observer secondObserver = mock(Observer.class);
 
-        verify(mockObserver1).update(observable, "test");
+        observable.addObserver(mockObserver);
+        observable.addObserver(secondObserver);
+        observable.triggerNotification("event");
+
+        verify(mockObserver).update(observable, "event");
+        verify(secondObserver).update(observable, "event");
     }
 
     @Test
-    void addObserver_registersMultipleObservers() {
-        observable.addObserver(mockObserver1);
-        observable.addObserver(mockObserver2);
-        observable.notifyObservers(observable, "test");
+    void addObserver_observersNotifiedInRegistrationOrder() {
+        List<Integer> callOrder = new ArrayList<>();
 
-        verify(mockObserver1).update(observable, "test");
-        verify(mockObserver2).update(observable, "test");
+        observable.addObserver((src, msg) -> callOrder.add(1));
+        observable.addObserver((src, msg) -> callOrder.add(2));
+        observable.addObserver((src, msg) -> callOrder.add(3));
+        observable.triggerNotification("event");
+
+        assertEquals(List.of(1, 2, 3), callOrder);
     }
 
     @Test
-    void addObserver_allowsDuplicateRegistration() {
-        observable.addObserver(mockObserver1);
-        observable.addObserver(mockObserver1);
-        observable.notifyObservers(observable, "test");
+    void removeObserver_removedObserverNoLongerReceivesNotifications() {
+        observable.addObserver(mockObserver);
+        observable.removeObserver(mockObserver);
 
-        verify(mockObserver1, times(2)).update(observable, "test");
+        observable.triggerNotification("event");
+
+        verify(mockObserver, never()).update(any(), any());
     }
 
     @Test
-    void removeObserver_unregistersObserver() {
-        observable.addObserver(mockObserver1);
-        observable.addObserver(mockObserver2);
-        observable.removeObserver(mockObserver1);
-        observable.notifyObservers(observable, "test");
+    void removeObserver_removingNonExistentObserverDoesNothing() {
+        Observer otherObserver = mock(Observer.class);
+        observable.addObserver(mockObserver);
 
-        verify(mockObserver1, never()).update(any(), any());
-        verify(mockObserver2).update(observable, "test");
+        assertDoesNotThrow(() -> observable.removeObserver(otherObserver));
+
+        observable.triggerNotification("event");
+        verify(mockObserver).update(observable, "event");
     }
 
     @Test
-    void removeObserver_removesOnlyFirstOccurrence() {
-        observable.addObserver(mockObserver1);
-        observable.addObserver(mockObserver1);
-        observable.removeObserver(mockObserver1);
-        observable.notifyObservers(observable, "test");
+    void removeObserver_onlySpecifiedObserverIsRemoved() {
+        Observer keepObserver = mock(Observer.class);
 
-        verify(mockObserver1, times(1)).update(observable, "test");
+        observable.addObserver(mockObserver);
+        observable.addObserver(keepObserver);
+        observable.removeObserver(mockObserver);
+        observable.triggerNotification("event");
+
+        verify(mockObserver, never()).update(any(), any());
+        verify(keepObserver).update(observable, "event");
     }
 
     @Test
-    void removeObserver_handlesNonExistentObserver() {
-        observable.addObserver(mockObserver1);
+    void notifyObservers_passesCorrectSourceAndMessage() {
+        TestableObservable customSource = new TestableObservable();
+        Object message = new Object();
 
-        assertDoesNotThrow(() -> observable.removeObserver(mockObserver2));
+        observable.addObserver(mockObserver);
+        observable.triggerNotification(customSource, message);
 
-        observable.notifyObservers(observable, "test");
-        verify(mockObserver1).update(observable, "test");
+        verify(mockObserver).update(customSource, message);
     }
 
     @Test
-    void notifyObservers_passesSourceAndMessage() {
-        observable.addObserver(mockObserver1);
-
-        Observable source = new Observable();
-        observable.notifyObservers(source, "message");
-
-        verify(mockObserver1).update(source, "message");
+    void notifyObservers_handlesEmptyObserverList() {
+        assertDoesNotThrow(() -> observable.triggerNotification("event"));
     }
 
     @Test
-    void notifyObservers_notifiesInOrderOfAddition() {
-        List<Integer> order = new ArrayList<>();
-
-        observable.addObserver((s, m) -> order.add(1));
-        observable.addObserver((s, m) -> order.add(2));
-        observable.addObserver((s, m) -> order.add(3));
-        observable.notifyObservers(observable, "test");
-
-        assertEquals(List.of(1, 2, 3), order);
-    }
-
-    @Test
-    void notifyObservers_handlesNoObservers() {
-        assertDoesNotThrow(() -> observable.notifyObservers(observable, "test"));
-    }
-
-    @Test
-    void notifyObservers_propagatesObserverException() {
-        Observer throwingObserver = (s, m) -> {
-            throw new RuntimeException("Observer error");
+    void notifyObservers_exceptionInObserverPropagatesToCaller() {
+        RuntimeException expectedException = new RuntimeException("Observer failed");
+        Observer failingObserver = (src, msg) -> {
+            throw expectedException;
         };
 
-        observable.addObserver(throwingObserver);
+        observable.addObserver(failingObserver);
 
-        assertThrows(RuntimeException.class, () ->
-                observable.notifyObservers(observable, "test")
+        RuntimeException thrown = assertThrows(
+                RuntimeException.class,
+                () -> observable.triggerNotification("event")
         );
+        assertSame(expectedException, thrown);
+    }
+
+
+    @Test
+    void typicalUsage_observerReceivesMultipleNotifications() {
+        List<String> receivedMessages = new ArrayList<>();
+        observable.addObserver((src, msg) -> receivedMessages.add((String) msg));
+
+        observable.triggerNotification("first");
+        observable.triggerNotification("second");
+        observable.triggerNotification("third");
+
+        assertEquals(List.of("first", "second", "third"), receivedMessages);
     }
 
     @Test
-    void typicalWorkflow_addsNotifiesAndRemoves() {
-        List<String> received = new ArrayList<>();
-        Observer logObserver = (s, m) -> received.add((String) m);
+    void typicalUsage_observerStopsReceivingAfterRemoval() {
+        List<String> receivedMessages = new ArrayList<>();
+        Observer trackingObserver = (src, msg) -> receivedMessages.add((String) msg);
 
-        observable.addObserver(logObserver);
-        observable.notifyObservers(observable, "event1");
-        observable.notifyObservers(observable, "event2");
-        observable.removeObserver(logObserver);
-        observable.notifyObservers(observable, "event3");
+        observable.addObserver(trackingObserver);
+        observable.triggerNotification("before");
+        observable.removeObserver(trackingObserver);
+        observable.triggerNotification("after");
 
-        assertEquals(List.of("event1", "event2"), received);
+        assertEquals(List.of("before"), receivedMessages);
     }
 }

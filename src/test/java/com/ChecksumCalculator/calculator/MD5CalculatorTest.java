@@ -9,8 +9,9 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 public class MD5CalculatorTest extends ChecksumCalculatorTestBase {
 
@@ -41,7 +42,7 @@ public class MD5CalculatorTest extends ChecksumCalculatorTestBase {
     @Test
     void calculate_handlesBinaryData() {
         MD5Calculator calculator = new MD5Calculator(pauseController);
-        byte[] binaryData = new byte[] {0x00, 0x01, (byte) 0xFF, (byte) 0xFE};
+        byte[] binaryData = new byte[]{0x00, 0x01, (byte) 0xFF, (byte) 0xFE};
 
         Optional<String> result = calculator.calculate(new ByteArrayInputStream(binaryData));
 
